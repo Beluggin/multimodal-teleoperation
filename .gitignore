@@ -1,0 +1,17 @@
+# Secrets — never commit tokens or keys. Scoped narrow on purpose so real
+# source files (including anything named e.g. tokenizer) are never hidden.
+.env
+*.pem
+*.key
+bench_token*
+*token*.txt
+secrets.yaml
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Vision (desktop proof env, weights, CLI output — never commit)
+.venv/
+vision_out/
+tank_vision/weights/*.pt

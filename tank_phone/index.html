@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Tank Phone</title>
+<style>
+  body { font-family: sans-serif; margin: 0.6em; background: #111; color: #eee; }
+  #cam { width: 100%; aspect-ratio: 4/3; background: #222; object-fit: contain;
+         border: 2px solid #444; touch-action: none; }
+  #out { white-space: pre-wrap; font-size: 0.85em; background: #1c1c1c;
+         padding: 0.5em; min-height: 3em; margin-top: 0.5em; }
+  form { display: flex; gap: 0.4em; margin-top: 0.5em; }
+  input[type=text] { flex: 1; font-size: 1em; padding: 0.4em; min-width: 0; }
+  button { font-size: 1em; padding: 0.4em 0.8em; }
+  .pill { display: inline-block; padding: 0.1em 0.5em; border-radius: 1em;
+          background: #5a3; color: #111; font-size: 0.8em; }
+  .pill.live { background: #c33; color: #fff; }
+  .pill.off { background: #555; color: #ddd; }
+  h3 { margin: 0.9em 0 0.3em; }
+  .srow { background: #1c1c1c; padding: 0.45em 0.5em; margin-top: 0.4em; }
+  .srow .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .srow .name { font-weight: bold; }
+  .srow .val { font-variant-numeric: tabular-nums; font-size: 1.1em; }
+  .srow input[type=range] { width: 100%; height: 2em; }
+  .srow .bot { display: flex; gap: 0.4em; margin-top: 0.2em; }
+  .srow .bot input[type=text] { font-size: 0.9em; }
+  .flagbtn { background: #a60; color: #fff; border: 0; }
+  #flags { font-size: 0.9em; background: #1c1c1c; padding: 0.5em; margin-top: 0.4em;
+           white-space: pre-wrap; min-height: 2em; }
+  .dim { opacity: 0.45; }
+</style>
+</head>
+<body>
+<h2>Tank <span id="modepill" class="pill off">…</span></h2>
+<img id="cam" src="/api/frame" alt="camera offline — tap grid still works">
+<form id="tform">
+  <input id="tin" type="text" placeholder='e.g. forward 0.5 seconds' autocomplete="off">
+  <button type="submit">Parse</button>
+</form>
+<div id="out">tap the frame, or type an instruction…</div>
+
+<h3>Servos (manual)</h3>
+<div id="servos">loading…</div>
+<div id="flags">no wonky flags yet</div>
+
+<script>
+const out = document.getElementById('out');
+const show = (o) => { out.textContent = JSON.stringify(o, null, 1); };
+document.getElementById('cam').addEventListener('pointerdown', async (e) => {
+  const r = e.target.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  const res = await fetch('/api/tap', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({x, y})});
+  show(await res.json());
+});
+document.getElementById('tform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = document.getElementById('tin').value;
+  const res = await fetch('/api/text', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text})});
+  show(await res.json());
+});
+
+// ---- servo sliders -------------------------------------------------------
+const post = async (path, body) => {
+  const r = await fetch(path, {method: 'POST',
+    headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  return r.json();
+};
+const lastSent = {};   // channel -> ts, client-side write throttle
+let servoEnabled = false;
+
+async function sendServo(ch, angle) {
+  const now = Date.now();
+  if (now - (lastSent[ch] || 0) < 120) return;
+  lastSent[ch] = now;
+  const body = await post('/api/servo', {channel: ch, angle});
+  if (!body.ok) show(body);
+}
+
+function renderFlags(flags) {
+  const el = document.getElementById('flags');
+  if (!flags.length) { el.textContent = 'no wonky flags yet'; return; }
+  const byCh = {};
+  flags.forEach(f => { (byCh[f.channel] = byCh[f.channel] || []).push(f); });
+  el.textContent = Object.keys(byCh).sort().map(ch => {
+    const fs = byCh[ch].slice().sort((a, b) => a.angle - b.angle);
+    const angles = fs.map(f => f.angle + '°').join(', ');
+    const range = fs.length > 1 ? `  (range ${fs[0].angle}–${fs[fs.length-1].angle})` : '';
+    const notes = fs.filter(f => f.note).map(f => `${f.angle}°: ${f.note}`).join(' · ');
+    return `ch${ch}: ${angles}${range}${notes ? '\n  ' + notes : ''}`;
+  }).join('\n');
+}
+
+async function loadServos() {
+  const data = await (await fetch('/api/servo')).json();
+  servoEnabled = !!data.enabled;
+  const pill = document.getElementById('modepill');
+  pill.textContent = servoEnabled ? 'SERVO LIVE' : 'SERVO OFF';
+  pill.className = 'pill ' + (servoEnabled ? 'live' : 'off');
+  const wrap = document.getElementById('servos');
+  wrap.innerHTML = '';
+  Object.keys(data.labels).sort().forEach(k => {
+    const ch = Number(k);
+    const row = document.createElement('div');
+    row.className = 'srow' + (servoEnabled ? '' : ' dim');
+    const lim = (data.limits || {})[k] || [0, 180];
+    row.innerHTML = `
+      <div class="top"><span class="name">${data.labels[k]}</span>
+        <span class="val" id="val${ch}">${data.state[k]}°</span></div>
+      <input type="range" min="${lim[0]}" max="${lim[1]}" step="1" value="${data.state[k]}"
+             id="sl${ch}" ${servoEnabled ? '' : 'disabled'}>
+      <div class="bot">
+        <input type="text" id="note${ch}" placeholder="wonky note (optional)">
+        <button class="flagbtn" id="flag${ch}">Flag wonky</button>
+      </div>
+      <div class="bot">
+        <span>allowed ${lim[0]}–${lim[1]}°</span>
+        <input type="number" id="lo${ch}" value="${lim[0]}" min="0" max="180" style="width:4em">
+        <input type="number" id="hi${ch}" value="${lim[1]}" min="0" max="180" style="width:4em">
+        <button id="lim${ch}">Set limits</button>
+      </div>`;
+    wrap.appendChild(row);
+    const sl = row.querySelector('#sl' + ch), val = row.querySelector('#val' + ch);
+    sl.addEventListener('input', () => {
+      val.textContent = sl.value + '°';
+      if (servoEnabled) sendServo(ch, Number(sl.value));
+    });
+    sl.addEventListener('change', () => {  // final position always sent
+      if (servoEnabled) { lastSent[ch] = 0; sendServo(ch, Number(sl.value)); }
+    });
+    row.querySelector('#lim' + ch).addEventListener('click', async () => {
+      const body = await post('/api/servo/limits', {
+        channel: ch,
+        min: Number(row.querySelector('#lo' + ch).value),
+        max: Number(row.querySelector('#hi' + ch).value)});
+      if (body.ok) { show({limits: `ch${ch} now ${body.limits[ch]}`}); loadServos(); }
+      else show(body);
+    });
+    row.querySelector('#flag' + ch).addEventListener('click', async () => {
+      const body = await post('/api/servo/flag', {
+        channel: ch, angle: Number(sl.value),
+        note: row.querySelector('#note' + ch).value});
+      if (body.ok) { renderFlags(body.flags); show({flagged: `ch${ch} @ ${sl.value}°`}); }
+      else show(body);
+    });
+  });
+  renderFlags(data.flags || []);
+}
+loadServos();
+fetch('/api/status').then(r => r.json()).then(s => {
+  if (!servoEnabled) out.textContent = 'servo live control OFF — sliders disabled (server started without --enable-servo)';
+});
+</script>
+</body>
+</html>
