@@ -2,10 +2,12 @@
 """tank_phone/server.py — Pi-hosted phone GUI for the tank.
 
 Stdlib only. Serves index.html plus a JSON API. Tap/text endpoints are
-dry-run previews. Servo sliders are LIVE only with --enable-servo, which
-is never the default: that flag is the authorization gate, set only with
-Adam present at the tank. Servo writes speak the proven 0x17 frame via
-servo_ctl.py (channels 1-6, 0-180 deg). No motor path exists here at all.
+dry-run previews. Servo writes are LIVE only with --enable-servo and
+motor writes only with --enable-motors; neither is ever the default —
+those flags are the authorization gates, set only with Adam present at
+the tank. Servo writes speak the proven 0x17 frame via servo_ctl.py
+(channels 1-6); motors speak the bench-listener protocol (:5098, token
+read from a Pi-local file, never sent to the phone).
 
 Desktop smoke (no hardware touched):
     python3 tank_phone/server.py --port 8123
@@ -22,9 +24,11 @@ Phone on the same WiFi: http://tank.local:8123/
 
 import argparse
 import json
+import math
 import os
 import select
 import shlex
+import socket
 import subprocess
 import sys
 import threading
@@ -33,7 +37,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-for _p in (HERE, os.path.join(os.path.dirname(HERE), "tank_tools")):
+for _p in (HERE, os.path.dirname(HERE),
+           os.path.join(os.path.dirname(HERE), "tank_tools")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -41,6 +46,33 @@ try:
     import xiaor_text_action as tx
 except ImportError:  # desktop without tank_tools on path: text endpoint degrades
     tx = None
+
+try:
+    from tank_speech.baseten_client import (
+        BasetenStreamConnection as _BasetenStreamConnection,
+        SpeechConfig as _SpeechConfig,
+        make_llm_fn as _make_llm_fn,
+        make_transcribe_fn as _make_transcribe_fn,
+        parse_transcript_event as _parse_transcript_event,
+    )
+    from tank_speech.session import (
+        SpeechSession as _SpeechSession,
+        route_transcript as _route_transcript,
+    )
+    from tank_speech.ws_client import (
+        WebSocketError as _WebSocketError,
+        accept_websocket as _accept_websocket,
+    )
+except ImportError:  # speech hooks degrade to 503, page still serves
+    _SpeechConfig = None
+    _route_transcript = None
+    _SpeechSession = None
+    _make_llm_fn = None
+    _make_transcribe_fn = None
+    _BasetenStreamConnection = None
+    _parse_transcript_event = None
+    _accept_websocket = None
+    _WebSocketError = Exception
 
 try:
     import servo_ctl
@@ -110,6 +142,97 @@ def tap_preview(x, y):
     dy = 0.5 - y          # + = up
     return {"pan_deg": round(dx * 2 * MAX_NUDGE_DEG, 1),
             "tilt_deg": round(dy * 2 * MAX_NUDGE_DEG, 1)}
+
+
+# ---------------------------------------------------------------------------
+# Manual drive: thumbstick -> bench-listener move. The listener's own caps
+# (3 s / 40%) are the hard floor; the page cap and --motor-cap can only
+# lower duty. Continuous drive works by re-sending short (0.5 s) moves at
+# ~10 Hz while the stick is held — if the client dies, the last move
+# self-stops within 0.5 s and the listener stops on disconnect.
+# ---------------------------------------------------------------------------
+HARD_DUTY_CAP = 40.0
+STICK_DEADZONE = 0.18
+DRIVE_SECS = 0.5
+
+# Speech audio: one short utterance per POST (16 kHz mono WAV from the
+# page is ~32 KB/s; 2 MB is over a minute — plenty, and bounded so a bad
+# client cannot park a handler thread or the speech queue).
+SPEECH_AUDIO_MAX = 2_000_000
+SPEECH_WAIT_SECS = 20.0
+
+
+def stick_to_move(x, y, cap):
+    """Stick (x right+, y down+, each -1..1) -> {move, duty, trim}.
+
+    Pure function. Garbage in -> stop. Pure side push spins; otherwise
+    forward/reverse with steering trim (right track faster = turn left,
+    so turning right needs negative trim — see tank_bench/README.md).
+    """
+    try:
+        x, y, cap = float(x), float(y), float(cap)
+        if not (math.isfinite(x) and math.isfinite(y) and math.isfinite(cap)):
+            raise ValueError
+    except (TypeError, ValueError):
+        return {"move": "stop", "duty": 0.0, "trim": 0.0}
+    x = max(-1.0, min(1.0, x))
+    y = max(-1.0, min(1.0, y))
+    cap = max(0.0, min(HARD_DUTY_CAP, cap))
+    if math.hypot(x, y) < STICK_DEADZONE:
+        return {"move": "stop", "duty": 0.0, "trim": 0.0}
+    if abs(x) > abs(y):
+        return {"move": "spinr" if x > 0 else "spinl",
+                "duty": round(abs(x) * cap, 1), "trim": 0.0}
+    return {"move": "go" if y < 0 else "rev",
+            "duty": round(abs(y) * cap, 1),
+            "trim": round(-x * 30.0, 1)}
+
+
+class BenchMotorClient:
+    """One persistent connection to the bench listener (:5098).
+
+    Token is read from a Pi-local file at construction and never leaves
+    the Pi: it is only ever written into listener lines, never returned
+    to the phone. Disconnect stops the tank (listener behaviour), so a
+    dead server can never leave it driving.
+    """
+
+    def __init__(self, token_file, host="127.0.0.1", port=5098):
+        with open(token_file) as f:
+            self._token = f.read().strip()
+        self._host, self._port = host, port
+        self._sock = None
+        self._file = None
+
+    def _connect(self):
+        self._sock = socket.create_connection((self._host, self._port),
+                                              timeout=5)
+        self._sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self._file = self._sock.makefile("r")
+
+    def send(self, move, secs, duty, trim):
+        line = f"{self._token} {move} {secs:g} {duty:g} {trim:g}\n"
+        try:
+            if self._sock is None:
+                self._connect()
+            self._sock.sendall(line.encode())
+            reply = self._file.readline().strip()
+        except (OSError, ValueError):
+            self.close()
+            self._connect()           # one retry on a fresh connection
+            self._sock.sendall(line.encode())
+            reply = self._file.readline().strip()
+        if not reply.startswith("ok"):
+            raise OSError(f"bench listener replied {reply!r}")
+        return reply
+
+    def close(self):
+        try:
+            if self._sock is not None:
+                self._sock.close()
+        except OSError:
+            pass
+        self._sock = self._file = None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -192,6 +315,76 @@ class Handler(BaseHTTPRequestHandler):
         finally:
             proc.terminate()
 
+    def _handle_speech_stream(self):
+        """Browser <-> Baseten STT relay over one websocket.
+
+        Binary PCM frames flow up, transcript events flow into
+        server.speech_partial / speech_last_routed, and the page polls
+        /api/speech/latest. Routed finals are parser previews ONLY —
+        this relay has no path to run(), motors, or servos.
+        """
+        factory = getattr(self.server, "speech_conn_factory", None)
+        if factory is None or _accept_websocket is None:
+            return self._json({"ok": False,
+                               "error": "speech streaming not configured"},
+                              code=503)
+        headers = {k.lower(): v for k, v in self.headers.items()}
+        try:
+            ws = _accept_websocket(self.connection, self.rfile, headers)
+        except Exception:
+            return  # 400 already written by accept_websocket
+        self.close_connection = True
+        upstream = factory()
+        try:
+            upstream.open()
+        except Exception as e:  # Baseten unreachable: honest close
+            self.server.speech_partial = ""
+            self.server.speech_last_error = str(e)
+            ws.close()
+            return
+        ws.settimeout(0.05)
+        try:
+            while True:
+                try:
+                    kind, payload = ws.recv_message()
+                except TimeoutError:
+                    kind, payload = None, None
+                except Exception:
+                    break
+                if kind == "close":
+                    break
+                if kind == "binary":
+                    upstream.send_audio(payload)
+                elif kind == "text" and '"end"' in str(payload):
+                    upstream.send_end()
+                for raw in upstream.poll():
+                    ev = _parse_transcript_event(raw)
+                    if ev is None:
+                        continue
+                    if ev.is_final:
+                        routed = _route_transcript(ev.text)
+                        seq = getattr(self.server, "speech_seq", 0) + 1
+                        self.server.speech_seq = seq
+                        self.server.speech_last_routed = {**routed,
+                                                          "seq": seq}
+                        self.server.speech_partial = ""
+                    else:
+                        self.server.speech_partial = ev.text
+        finally:
+            try:
+                upstream.close()
+            except Exception:
+                pass
+            ws.close()
+
+    def _launch_status(self):
+        st = getattr(self.server, "launch_status", None)
+        if st is None:
+            st = self.server.launch_status = {
+                "state": "idle", "text": "", "target": "", "detail": "",
+                "stop_requested": False}
+        return st
+
     # -- servo sliders ---------------------------------------------------
     def _lock(self):
         lock = getattr(self.server, "servo_lock", None)
@@ -238,6 +431,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
+            # The page changes often during the demo build; a stale
+            # cached copy looks exactly like "the fix didn't work".
+            self.send_header("Cache-Control", "no-store")
             self.end_headers()
             self.wfile.write(body)
         elif path == "/api/status":
@@ -246,6 +442,46 @@ class Handler(BaseHTTPRequestHandler):
                                                       "servo_enabled", False)),
                         "note": "tap/text are previews; servo sliders live "
                                 "only when servo_enabled"})
+        elif path == "/api/speech/status":
+            if _SpeechConfig is None:
+                return self._json({"ok": False,
+                                   "error": "speech hooks unavailable"},
+                                  code=503)
+            session = getattr(self.server, "speech_session", None)
+            wired = bool(session is not None
+                         and getattr(session, "enabled", False))
+            wired = wired or getattr(
+                self.server, "speech_conn_factory", None) is not None
+            self._json({"ok": True, "wired": wired,
+                        "speech": _SpeechConfig.from_env().status(),
+                        "session": session.status() if session else None,
+                        "note": "speech is preview-only: transcripts are "
+                                "classified, nothing sent to hardware"})
+        elif path == "/api/launch":
+            self._json({"ok": True, "launch": self._launch_status()})
+        elif path == "/api/speech/stream":
+            self._handle_speech_stream()
+        elif path == "/api/speech/latest":
+            self._json({"ok": True,
+                        "partial": getattr(self.server,
+                                           "speech_partial", ""),
+                        "routed": getattr(self.server,
+                                          "speech_last_routed", None),
+                        "error": getattr(self.server,
+                                         "speech_last_error", "")})
+        elif path == "/api/telemetry":
+            s = self.server
+            self._json({
+                "ok": True,
+                "servo_enabled": bool(getattr(s, "servo_enabled", False)),
+                "motor_enabled": bool(getattr(s, "motor_enabled", False)),
+                "motor_cap": getattr(s, "motor_cap", HARD_DUTY_CAP),
+                "servo": self._servo_payload() if servo_ctl else None,
+                "speech": (_SpeechConfig.from_env().status()
+                           if _SpeechConfig else None),
+                "ultrasonic": "unavailable — physical check pending",
+                "camera": "mjpeg /api/frame",
+            })
         elif path == "/api/servo":
             if servo_ctl is None:
                 return self._json({"ok": False, "error": "servo unavailable"},
@@ -287,10 +523,214 @@ class Handler(BaseHTTPRequestHandler):
                                    code=503)
             a = tx.classify(text)  # classify ONLY: never run(), never drive
             self._json({"ok": True, "dry_run": True,
-                        "kind": a.kind, "label": a.label,
+                        "kind": a.kind, "label": a.label, "target": a.target,
                         "duration": a.duration, "reason": a.reason,
                         "commands": a.commands,
                         "note": "preview only: not sent (dry run)"})
+        elif path == "/api/speech/transcript":
+            # Speech hook (opened, not wired): a future Baseten STT final
+            # lands here / in SpeechSession.tick(). Classify ONLY.
+            data = self._read_json() or {}
+            text = data.get("text", "")
+            if not isinstance(text, str):
+                return self._json({"ok": False,
+                                   "error": "text must be a string"},
+                                  code=400)
+            if _route_transcript is None:
+                return self._json({"ok": False,
+                                   "error": "speech hooks unavailable"},
+                                  code=503)
+            session = getattr(self.server, "speech_session", None)
+            self._json({"ok": True, "dry_run": True,
+                        "wired": bool(session is not None and
+                                      getattr(session, "enabled", False)),
+                        **_route_transcript(text),
+                        "note": "preview only: not sent (dry run)"})
+        elif path == "/api/speech/audio":
+            # Phone mic utterance -> Baseten STT (background worker) ->
+            # parser preview. Classify ONLY: this endpoint has no path
+            # to run(), the bench listener, or any servo write.
+            ctype = (self.headers.get("Content-Type") or ""
+                     ).split(";")[0].strip().lower()
+            if not (ctype.startswith("audio/")
+                    or ctype == "application/octet-stream"):
+                return self._json(
+                    {"ok": False,
+                     "error": "need an audio Content-Type (e.g. audio/wav)"},
+                    code=415)
+            session = getattr(self.server, "speech_session", None)
+            if session is None or not getattr(session, "enabled", False):
+                return self._json({"ok": False,
+                                   "error": "speech not configured on "
+                                            "server (Baseten STT env)"},
+                                  code=503)
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                n = 0
+            if n <= 0:
+                return self._json({"ok": False, "error": "empty audio body"},
+                                  code=400)
+            if n > SPEECH_AUDIO_MAX:
+                return self._json({"ok": False,
+                                   "error": "audio too long (one short "
+                                            "utterance please)"},
+                                  code=413)
+            audio = self.rfile.read(n)
+            if not session.feed_audio(audio):
+                return self._json({"ok": False,
+                                   "error": "speech busy — try again"},
+                                  code=503)
+            deadline = time.monotonic() + SPEECH_WAIT_SECS
+            routed = None
+            while time.monotonic() < deadline:
+                routed = session.tick()
+                if routed is not None:
+                    break
+                time.sleep(0.05)
+            if routed is None:
+                err = getattr(session, "last_error", "")
+                return self._json(
+                    {"ok": False, "wired": True,
+                     "error": "no transcript heard"
+                              + (f" ({err})" if err else " — try again")},
+                    code=504)
+            self._json({"ok": True, "dry_run": True, "wired": True,
+                        **routed,
+                        "note": "speech preview only: not sent (dry run)"})
+        elif path == "/api/launch":
+            # Page -> desktop launcher queue. Goto only: the desktop
+            # launcher (tank_vision/launcher.py) consumes one pending
+            # launch and drives under its own authorisation; this Pi
+            # endpoint itself moves nothing.
+            data = self._read_json() or {}
+            text = data.get("text", "")
+            if not isinstance(text, str) or tx is None:
+                return self._json({"ok": False,
+                                   "error": "need instruction text"},
+                                  code=400)
+            a = tx.classify(text)
+            if a.kind != "goto" or not a.target:
+                return self._json(
+                    {"ok": False, "kind": a.kind,
+                     "error": f"only a goto can launch ({a.kind})"},
+                    code=400)
+            st = self._launch_status()
+            if st["state"] in ("pending", "running"):
+                return self._json({"ok": False,
+                                   "error": "a drive is already active"},
+                                  code=409)
+            self.server.launch_status = {
+                "state": "pending", "text": text, "target": a.target,
+                "detail": "queued — waiting for the desktop launcher",
+                "stop_requested": False}
+            self._json({"ok": True, "state": "pending",
+                        "target": a.target})
+        elif path == "/api/launch/consume":
+            st = self._launch_status()
+            if st["state"] != "pending":
+                return self._json({"ok": False,
+                                   "error": "no pending launch"}, code=409)
+            st["state"] = "running"
+            st["detail"] = "launcher starting"
+            self._json({"ok": True, "text": st["text"],
+                        "target": st["target"]})
+        elif path == "/api/launch/report":
+            data = self._read_json() or {}
+            state = data.get("state")
+            if state not in ("running", "done", "failed", "stopped"):
+                return self._json({"ok": False,
+                                   "error": "bad report state"}, code=400)
+            st = self._launch_status()
+            st["state"] = state
+            st["detail"] = str(data.get("detail", ""))[:200]
+            if state in ("done", "failed", "stopped"):
+                st["stop_requested"] = False
+            self._json({"ok": True, "launch": st})
+        elif path == "/api/launch/stop":
+            st = self._launch_status()
+            if st["state"] == "pending":
+                st["state"] = "stopped"
+                st["detail"] = "stopped before it started"
+            elif st["state"] == "running":
+                st["stop_requested"] = True
+                st["detail"] = "stop requested"
+            self._json({"ok": True, "launch": st})
+        elif path == "/api/drive":
+            # Manual thumbstick. Stop is ALWAYS accepted; any real move
+            # needs --enable-motors (Adam present). Duty is clamped by
+            # the page cap, the server cap, and the 40% hard cap.
+            data = self._read_json() or {}
+            mv = stick_to_move(data.get("x", 0), data.get("y", 0),
+                               data.get("cap", HARD_DUTY_CAP))
+            mv["duty"] = min(mv["duty"],
+                             float(getattr(self.server, "motor_cap",
+                                           HARD_DUTY_CAP)))
+            if mv["move"] != "stop" and not getattr(
+                    self.server, "motor_enabled", False):
+                return self._json({"ok": False,
+                                   "error": "motor live control disabled"},
+                                  code=403)
+            client = getattr(self.server, "motor_client", None)
+            if client is None:
+                if mv["move"] == "stop":
+                    return self._json({"ok": True, **mv,
+                                       "note": "motors disabled: already stopped"})
+                return self._json({"ok": False,
+                                   "error": "bench listener not connected"},
+                                  code=503)
+            try:
+                with self._lock():
+                    reply = client.send(mv["move"], DRIVE_SECS,
+                                        mv["duty"], mv["trim"])
+            except OSError as e:
+                return self._json(
+                    {"ok": False,
+                     "error": f"bench listener unreachable ({e}) — "
+                              f"is motor_listen running on :5098?"},
+                    code=503)
+            self._json({"ok": True, **mv, "reply": reply})
+        elif path == "/api/camera":
+            # Camera thumbstick: incremental pan/tilt through the proven
+            # servo path. Same --enable-servo gate as the sliders.
+            if servo_ctl is None:
+                return self._json({"ok": False, "error": "servo unavailable"},
+                                  code=503)
+            data = self._read_json() or {}
+            try:
+                x, y = float(data.get("x", 0)), float(data.get("y", 0))
+                if not (math.isfinite(x) and math.isfinite(y)):
+                    raise ValueError
+            except (TypeError, ValueError):
+                return self._json({"ok": False, "error": "need numeric x, y"},
+                                  code=400)
+            # Stick axes are inverted vs servo angle on the physical
+            # head (Adam, live test 2026-10-29): stick right must pan
+            # right, which is ch6 DOWN; stick up must tilt up, ch5 UP.
+            step_pan = int(round(max(-1.0, min(1.0, x)) * -3))
+            step_tilt = int(round(max(-1.0, min(1.0, y)) * -3))
+            if not getattr(self.server, "servo_enabled", False):
+                return self._json({"ok": False,
+                                   "error": "servo live control disabled"},
+                                  code=403)
+            limits = getattr(self.server, "servo_limits", servo_ctl.LIMITS)
+            with self._lock():
+                state = dict(self.server.servo_state)
+                new = dict(state)
+                new[6] = min(max(state[6] + step_pan, limits[6][0]),
+                             limits[6][1])
+                new[5] = min(max(state[5] + step_tilt, limits[5][0]),
+                             limits[5][1])
+                try:
+                    for ch in (6, 5):
+                        if new[ch] != state[ch]:
+                            self.server.servo_bus.set_angle(ch, new[ch])
+                            self.server.servo_state[ch] = new[ch]
+                except OSError as e:
+                    return self._json({"ok": False,
+                                       "error": f"i2c write failed: {e}"},
+                                      code=503)
+            self._json(self._servo_payload())
         elif path == "/api/servo":
             if servo_ctl is None:
                 return self._json({"ok": False, "error": "servo unavailable"},
@@ -392,8 +832,31 @@ def main(argv=None):
     ap.add_argument("--enable-servo", action="store_true",
                     help="LIVE servo writes via sliders (Adam present only)")
     ap.add_argument("--servo-device", default="/dev/i2c-1")
+    ap.add_argument("--enable-motors", action="store_true",
+                    help="LIVE motor writes via thumbstick (Adam present only)")
+    ap.add_argument("--motor-cap", type=float, default=HARD_DUTY_CAP,
+                    help="server-side duty cap %% (hard ceiling 40)")
+    ap.add_argument("--bench-host", default="127.0.0.1")
+    ap.add_argument("--bench-port", type=int, default=5098)
+    ap.add_argument("--bench-token-file",
+                    default="/tmp/claude-1000/bench_token",
+                    help="Pi-local bench token file (never sent to phone)")
+    ap.add_argument("--tls-cert", default="",
+                    help="PEM cert for HTTPS (phone mic needs a secure "
+                         "origin; e.g. a Tailscale cert for the Pi)")
+    ap.add_argument("--tls-key", default="",
+                    help="PEM key matching --tls-cert")
     args = ap.parse_args(argv)
     srv = ThreadingHTTPServer((args.bind, args.port), Handler)
+    srv.motor_enabled = bool(args.enable_motors)
+    srv.motor_cap = max(0.0, min(HARD_DUTY_CAP, args.motor_cap))
+    srv.motor_client = None
+    if args.enable_motors:
+        # Loud failure is correct here: enabling motors without the
+        # listener/token must not silently look like a working GUI.
+        srv.motor_client = BenchMotorClient(args.bench_token_file,
+                                            host=args.bench_host,
+                                            port=args.bench_port)
     srv.servo_enabled = bool(args.enable_servo and servo_ctl is not None)
     srv.servo_bus = None
     srv.servo_state = dict(servo_ctl.DEFAULTS) if servo_ctl else {}
@@ -408,9 +871,42 @@ def main(argv=None):
         if servo_ctl is None:
             raise SystemExit("--enable-servo: servo_ctl unavailable")
         srv.servo_bus = servo_ctl.ServoBus(args.servo_device)  # may raise: loud
+    # Speech: background Baseten STT session (worker thread; warmup and
+    # transcription never block a handler or any drive path). Needs
+    # BASETEN_API_KEY + a deployed streaming-STT model id in the env —
+    # without them the session is simply absent and speech endpoints
+    # report 503. The session can only produce parser previews.
+    srv.speech_session = None
+    srv.speech_conn_factory = None
+    srv.speech_partial = ""
+    srv.speech_last_routed = None
+    srv.speech_last_error = ""
+    srv.speech_seq = 0
+    srv.launch_status = {"state": "idle", "text": "", "target": "",
+                         "detail": "", "stop_requested": False}
+    if _SpeechSession is not None:
+        _cfg = _SpeechConfig.from_env()
+        _fn = _make_transcribe_fn(_cfg)
+        if _fn is not None:
+            srv.speech_session = _SpeechSession(
+                _cfg, transcribe_fn=_fn,
+                llm_fn=_make_llm_fn(_cfg)).start()
+        if _cfg.enabled and _BasetenStreamConnection is not None:
+            srv.speech_conn_factory = (
+                lambda: _BasetenStreamConnection(_cfg))
     mode = "LIVE SERVO" if srv.servo_enabled else "servo disabled"
-    print(f"serving on http://{args.bind}:{args.port}/ ({mode}; tap/text previews)",
-          flush=True)
+    mmode = "LIVE MOTORS" if srv.motor_enabled else "motors disabled"
+    smode = ("SPEECH LIVE" if (srv.speech_session
+                               or srv.speech_conn_factory)
+             else "speech off")
+    scheme = "https" if (args.tls_cert and args.tls_key) else "http"
+    if scheme == "https":
+        import ssl as _ssl
+        _ctx = _ssl.SSLContext(_ssl.PROTOCOL_TLS_SERVER)
+        _ctx.load_cert_chain(args.tls_cert, args.tls_key)
+        srv.socket = _ctx.wrap_socket(srv.socket, server_side=True)
+    print(f"serving on {scheme}://{args.bind}:{args.port}/ ({mode}; "
+          f"{mmode}; {smode}; tap/text previews)", flush=True)
     srv.serve_forever()
 
 

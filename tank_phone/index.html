@@ -2,106 +2,935 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Tank Phone</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Tank</title>
 <style>
-  body { font-family: sans-serif; margin: 0.6em; background: #111; color: #eee; }
-  #cam { width: 100%; aspect-ratio: 4/3; background: #222; object-fit: contain;
-         border: 2px solid #444; touch-action: none; }
-  #out { white-space: pre-wrap; font-size: 0.85em; background: #1c1c1c;
-         padding: 0.5em; min-height: 3em; margin-top: 0.5em; }
-  form { display: flex; gap: 0.4em; margin-top: 0.5em; }
-  input[type=text] { flex: 1; font-size: 1em; padding: 0.4em; min-width: 0; }
-  button { font-size: 1em; padding: 0.4em 0.8em; }
-  .pill { display: inline-block; padding: 0.1em 0.5em; border-radius: 1em;
-          background: #5a3; color: #111; font-size: 0.8em; }
-  .pill.live { background: #c33; color: #fff; }
-  .pill.off { background: #555; color: #ddd; }
-  h3 { margin: 0.9em 0 0.3em; }
-  .srow { background: #1c1c1c; padding: 0.45em 0.5em; margin-top: 0.4em; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0;
+         background: #0b0e11; color: #eef1f4; overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  #cam { position: absolute; inset: 0; width: 100%; height: 100%;
+         object-fit: cover; background: #171b1f; touch-action: none;
+         -webkit-touch-callout: none; -webkit-user-select: none;
+         user-select: none; -webkit-user-drag: none; }
+  #micBtn { touch-action: none; -webkit-touch-callout: none;
+            -webkit-user-select: none; user-select: none; }
+  #cross { position: absolute; left: 50%; top: 46%; width: 44px; height: 44px;
+           margin: -22px 0 0 -22px; border: 2px solid rgba(255,255,255,.55);
+           border-radius: 50%; pointer-events: none; }
+  #cross::after { content: ""; position: absolute; left: 50%; top: 50%;
+           width: 4px; height: 4px; margin: -2px; border-radius: 50%;
+           background: #ff7a1a; }
+  #tapmark { position: absolute; width: 34px; height: 34px; margin: -17px;
+           border: 3px solid #ff7a1a; border-radius: 50%; display: none;
+           pointer-events: none; }
+  /* top bar */
+  #topbar { position: absolute; top: 0; left: 0; right: 0; display: flex;
+           align-items: center; gap: .5em; padding: calc(.5em + env(safe-area-inset-top)) .6em .5em;
+           background: rgba(8,10,12,.72); }
+  #topbar .name { font-weight: 800; letter-spacing: .06em; font-size: 1.05em; }
+  .seg { display: flex; background: #22282e; border-radius: 999px; padding: 3px; margin-left: auto; }
+  .seg button { border: 0; background: transparent; color: #aeb8c2; font-size: .95em;
+           font-weight: 700; padding: .42em .9em; border-radius: 999px; }
+  .seg button.on { background: #ff7a1a; color: #14100a; }
+  .pill { padding: .14em .55em; border-radius: 999px; font-size: .72em;
+          font-weight: 800; background: #394048; color: #cfd6dd; white-space: nowrap; }
+  .pill.live { background: #1f9d55; color: #fff; }
+  .pill.motor { background: #c22f2f; color: #fff; }
+  .pill.off { background: #394048; }
+  /* status line (showcase) */
+  #statuscard { position: absolute; top: calc(64px + env(safe-area-inset-top));
+           left: 50%; transform: translateX(-50%); width: min(92vw, 520px);
+           text-align: center; pointer-events: none; }
+  #bigstatus { font-size: clamp(26px, 6vw, 40px); font-weight: 800;
+           text-shadow: 0 2px 14px rgba(0,0,0,.8); }
+  #substatus { font-size: .95em; color: #d7dde3; text-shadow: 0 1px 8px #000; margin-top: .15em; }
+  /* bottom control layers */
+  .layer { position: absolute; left: 0; right: 0; bottom: 0;
+           padding: .6em .7em calc(.7em + env(safe-area-inset-bottom)); }
+  .sticks { display: flex; justify-content: space-between; align-items: flex-end; gap: .6em; }
+  .stickwrap { text-align: center; }
+  .sticklabel { font-size: .78em; font-weight: 800; letter-spacing: .08em; color: #d7dde3;
+           text-shadow: 0 1px 6px #000; margin-bottom: .3em; }
+  .stick { position: relative; width: 148px; height: 148px; border-radius: 50%;
+           background: rgba(16,19,22,.66); border: 2px solid rgba(255,255,255,.28);
+           touch-action: none; margin: 0 auto; }
+  .stick::before, .stick::after { content: ""; position: absolute; background: rgba(255,255,255,.14); }
+  .stick::before { left: 50%; top: 10px; bottom: 10px; width: 1px; }
+  .stick::after { top: 50%; left: 10px; right: 10px; height: 1px; }
+  .nub { position: absolute; width: 62px; height: 62px; left: 50%; top: 50%;
+           margin: -31px 0 0 -31px; border-radius: 50%; background: #ff7a1a;
+           border: 2px solid rgba(0,0,0,.35); box-shadow: 0 4px 14px rgba(0,0,0,.5); }
+  .stick.camstick .nub { background: #e8edf1; }
+  .midcol { display: flex; flex-direction: column; align-items: center; gap: .55em; flex: 1; }
+  #stopbtn { width: 96px; height: 96px; border-radius: 50%; border: 4px solid #fff;
+           background: #c22f2f; color: #fff; font-size: 1.25em; font-weight: 900;
+           letter-spacing: .04em; touch-action: none; }
+  #stopbtn:active { background: #8f1f1f; }
+  .capbox { background: rgba(16,19,22,.72); border-radius: 12px; padding: .45em .7em;
+           text-align: center; min-width: 132px; }
+  .capbox label { font-size: .78em; font-weight: 800; letter-spacing: .06em; }
+  .capbox input[type=range] { width: 100%; }
+  .rowbtns { display: flex; gap: .5em; }
+  .toolbtn { border: 1px solid rgba(255,255,255,.35); background: rgba(16,19,22,.78);
+           color: #eef1f4; font-weight: 700; font-size: .92em; border-radius: 999px;
+           padding: .5em .95em; }
+  .toolbtn.on { background: #ff7a1a; color: #14100a; border-color: #ff7a1a; }
+  /* showcase sheet */
+  #sheet { background: rgba(10,12,14,.86); border-radius: 18px; padding: .7em;
+           max-width: 560px; margin: 0 auto; }
+  #tform { display: flex; gap: .45em; }
+  #tin { flex: 1; min-width: 0; font-size: 1.05em; padding: .62em .7em;
+         border-radius: 12px; border: 1px solid #454e57; background: #171b1f; color: #fff; }
+  #sendbtn { background: #ff7a1a; color: #14100a; border: 0; font-weight: 800;
+         font-size: 1em; border-radius: 12px; padding: .6em 1.1em; }
+  .chips { display: flex; gap: .45em; flex-wrap: wrap; margin-top: .55em; }
+  .chip { background: #22282e; color: #d7dde3; border: 1px solid #394048;
+          border-radius: 999px; padding: .42em .8em; font-size: .92em; }
+  .showrow { display: flex; align-items: center; gap: .7em; margin-top: .65em; flex-wrap: wrap; }
+  .note { color: #aeb8c2; font-size: .88em; }
+  .switchrow { display: flex; align-items: center; gap: .45em; font-weight: 700; }
+  .switchrow input { display: none; }
+  .switchrow .track { width: 46px; height: 26px; border-radius: 999px; background: #394048;
+          position: relative; display: inline-block; }
+  .switchrow .track::after { content: ""; position: absolute; width: 20px; height: 20px;
+          border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: left .15s; }
+  .switchrow input:checked + .track { background: #1f9d55; }
+  .switchrow input:checked + .track::after { left: 23px; }
+  .switchrow input:disabled + .track { opacity: .4; }
+  #telemetry { display: grid; grid-template-columns: 1fr 1fr; gap: .4em .8em;
+          margin-top: .6em; font-size: .9em; }
+  #telemetry div { background: #171b1f; border-radius: 10px; padding: .45em .6em; }
+  #telemetry b { display: block; font-size: .78em; letter-spacing: .06em; color: #aeb8c2; }
+  /* arm sheet + drawer */
+  #armsheet, #drawer { position: absolute; left: 50%; transform: translateX(-50%);
+          bottom: 0; width: min(96vw, 560px); max-height: 72dvh; overflow: auto;
+          background: rgba(12,14,16,.96); border-radius: 18px 18px 0 0; padding: .7em .8em
+          calc(.8em + env(safe-area-inset-bottom)); z-index: 5; }
+  .armhead { display: flex; align-items: center; gap: .6em; }
+  .armhead .toolbtn { margin-left: auto; }
+  #armsvg { width: 100%; height: auto; touch-action: none; }
+  #armsvg .ground { stroke: #394048; stroke-width: 2; }
+  #armsvg .basebox { fill: #2a3138; stroke: #59636e; }
+  #armsvg .link { stroke: #ff7a1a; stroke-width: 10; stroke-linecap: round; }
+  #armsvg .prong { stroke: #e8edf1; stroke-width: 6; stroke-linecap: round; }
+  #armsvg .dash { stroke: #59636e; stroke-width: 2; stroke-dasharray: 4 4; }
+  #armsvg .joint { fill: #171b1f; stroke: #fff; stroke-width: 2.5; }
+  #armsvg .joint.grab { fill: #ff7a1a; cursor: grab; }
+  #armsvg .joint.small { fill: #e8edf1; }
+  .armrow { display: flex; align-items: center; gap: .6em; margin-top: .4em; }
+  .armrow input[type=range] { flex: 1; }
+  .armvals { margin-top: .45em; color: #d7dde3; font-size: .92em; }
+  #gearbtn { position: absolute; right: .6em; bottom: calc(190px + env(safe-area-inset-bottom));
+          width: 46px; height: 46px; border-radius: 50%; z-index: 4;
+          background: rgba(16,19,22,.8); color: #fff; border: 1px solid rgba(255,255,255,.35);
+          font-size: 1.2em; }
+  /* engineering sliders (kept from the previous page) */
+  .srow { background: #1c2126; border-radius: 12px; padding: .5em .6em; margin-top: .5em; }
   .srow .top { display: flex; justify-content: space-between; align-items: baseline; }
-  .srow .name { font-weight: bold; }
-  .srow .val { font-variant-numeric: tabular-nums; font-size: 1.1em; }
+  .srow .name { font-weight: 700; }
+  .srow .val { font-variant-numeric: tabular-nums; font-size: 1.05em; }
   .srow input[type=range] { width: 100%; height: 2em; }
-  .srow .bot { display: flex; gap: 0.4em; margin-top: 0.2em; }
-  .srow .bot input[type=text] { font-size: 0.9em; }
-  .flagbtn { background: #a60; color: #fff; border: 0; }
-  #flags { font-size: 0.9em; background: #1c1c1c; padding: 0.5em; margin-top: 0.4em;
-           white-space: pre-wrap; min-height: 2em; }
-  .dim { opacity: 0.45; }
+  .srow .bot { display: flex; gap: .4em; margin-top: .25em; align-items: center; }
+  .srow .bot input[type=text] { flex: 1; min-width: 0; font-size: .9em; padding: .35em;
+          border-radius: 8px; border: 1px solid #454e57; background: #111417; color: #fff; }
+  .flagbtn { background: #a60; color: #fff; border: 0; border-radius: 8px; padding: .45em .7em; }
+  #flags { font-size: .9em; background: #1c2126; border-radius: 12px; padding: .55em;
+          margin-top: .5em; white-space: pre-wrap; min-height: 2em; }
+  .dim { opacity: .45; }
+  @media (max-width: 430px) {
+    .stick { width: 128px; height: 128px; }
+    #stopbtn { width: 82px; height: 82px; }
+    .pill { display: none; } .pill:first-of-type { display: inline-block; }
+  }
 </style>
 </head>
 <body>
-<h2>Tank <span id="modepill" class="pill off">…</span></h2>
-<img id="cam" src="/api/frame" alt="camera offline — tap grid still works">
-<form id="tform">
-  <input id="tin" type="text" placeholder='e.g. forward 0.5 seconds' autocomplete="off">
-  <button type="submit">Parse</button>
-</form>
-<div id="out">tap the frame, or type an instruction…</div>
+<div id="stage">
+  <img id="cam" src="/api/frame" alt="camera" draggable="false">
+  <div id="cross"></div><div id="tapmark"></div>
 
-<h3>Servos (manual)</h3>
-<div id="servos">loading…</div>
-<div id="flags">no wonky flags yet</div>
+  <div id="topbar">
+    <span class="name">TANK</span>
+    <span id="pillServo" class="pill off">SERVO …</span>
+    <span id="pillMotor" class="pill off">MOTOR …</span>
+    <span id="pillSpeech" class="pill off">SPEECH …</span>
+    <div class="seg">
+      <button id="modeManual" class="on" type="button">Manual</button>
+      <button id="modeShow" type="button">Showcase</button>
+    </div>
+  </div>
+
+  <div id="statuscard" hidden>
+    <div id="bigstatus">Ready</div>
+    <div id="substatus">Type or tap an instruction below.</div>
+  </div>
+
+  <!-- MANUAL -->
+  <div id="layerManual" class="layer">
+    <div class="sticks">
+      <div class="stickwrap">
+        <div class="sticklabel">DRIVE</div>
+        <div class="stick" id="stickDrive"><div class="nub"></div></div>
+      </div>
+      <div class="midcol">
+        <div class="capbox">
+          <label>MAX SPEED <span id="capval">25%</span></label>
+          <input type="range" id="cap" min="5" max="40" step="1" value="25">
+        </div>
+        <button id="stopbtn" type="button">STOP</button>
+        <div id="drivenote" class="note" role="status"></div>
+        <div class="rowbtns">
+          <button class="toolbtn" id="armbtn" type="button">Arm</button>
+          <button class="toolbtn" id="centrecam" type="button">Centre cam</button>
+        </div>
+      </div>
+      <div class="stickwrap">
+        <div class="sticklabel">CAMERA</div>
+        <div class="stick camstick" id="stickCam"><div class="nub"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHOWCASE -->
+  <div id="layerShow" class="layer" hidden>
+    <div id="sheet">
+      <form id="tform">
+        <input id="tin" type="text" placeholder="e.g. go get the shoe" autocomplete="off">
+        <button type="submit" id="sendbtn">Send</button>
+      </form>
+      <div class="chips">
+        <button type="button" class="chip" data-text="go get the shoe">Go get the shoe</button>
+        <button type="button" class="chip" data-text="wave">Wave</button>
+        <button type="button" class="chip" data-text="look left">Look left</button>
+        <button type="button" class="chip" data-text="stop">Stop</button>
+      </div>
+      <div class="showrow">
+        <label class="switchrow"><span>Speech</span>
+          <input type="checkbox" id="speechToggle"><span class="track"></span></label>
+        <span id="speechNote" class="note">checking…</span>
+        <button class="toolbtn" id="telemetryBtn" type="button">Telemetry</button>
+      </div>
+      <div class="showrow">
+        <button class="toolbtn" id="micBtn" type="button" disabled>Hold to talk</button>
+        <span id="micNote" class="note">mic off</span>
+      </div>
+      <div class="showrow">
+        <button class="toolbtn" id="launchBtn" type="button" disabled>Launch drive</button>
+        <button class="toolbtn" id="launchStopBtn" type="button" hidden>Stop drive</button>
+        <span id="launchNote" class="note">Say or type a "go get the …" first.</span>
+      </div>
+      <div id="telemetry" hidden></div>
+    </div>
+  </div>
+
+  <!-- ARM SHEET -->
+  <div id="armsheet" hidden>
+    <div class="armhead">
+      <strong>Arm — drag the picture</strong>
+      <span class="note">schematic · commanded, not measured</span>
+      <button class="toolbtn" id="armclose" type="button">Close</button>
+    </div>
+    <svg id="armsvg" viewBox="0 0 320 230" role="img" aria-label="arm model">
+      <line x1="20" y1="200" x2="300" y2="200" class="ground"/>
+      <rect x="52" y="176" width="52" height="24" rx="4" class="basebox"/>
+      <circle id="jointBase" cx="78" cy="176" r="10" class="joint"/>
+      <line id="linkUpper" x1="78" y1="176" x2="150" y2="96" class="link"/>
+      <circle id="jointElbow" cx="150" cy="96" r="11" class="joint grab"/>
+      <line id="linkFore" x1="150" y1="96" x2="222" y2="120" class="link"/>
+      <g id="claw">
+        <line id="prongTop" x1="222" y1="120" x2="248" y2="106" class="prong"/>
+        <line id="prongBot" x1="222" y1="120" x2="248" y2="134" class="prong"/>
+        <circle id="jointClaw" cx="222" cy="120" r="10" class="joint grab"/>
+      </g>
+      <circle id="rotHandle" cx="246" cy="88" r="8" class="joint grab small"/>
+      <line x1="222" y1="120" x2="246" y2="88" class="dash"/>
+    </svg>
+    <div class="armrow">
+      <span>Base drag</span>
+      <input type="range" id="armBase" min="0" max="180" step="1">
+      <span id="armBaseVal" class="val"></span>
+    </div>
+    <div class="armvals" id="armvals"></div>
+  </div>
+
+  <!-- ENGINEERING DRAWER (servo sliders / limits / flags, as before) -->
+  <div id="drawer" hidden>
+    <div class="armhead">
+      <strong>Servos (engineering)</strong>
+      <button class="toolbtn" id="drawerclose" type="button">Close</button>
+    </div>
+    <div id="servos">loading…</div>
+    <div id="flags">no wonky flags yet</div>
+  </div>
+  <button id="gearbtn" type="button" aria-label="engineering">⚙</button>
+</div>
 
 <script>
-const out = document.getElementById('out');
-const show = (o) => { out.textContent = JSON.stringify(o, null, 1); };
-document.getElementById('cam').addEventListener('pointerdown', async (e) => {
-  const r = e.target.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-  const res = await fetch('/api/tap', {method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({x, y})});
-  show(await res.json());
-});
-document.getElementById('tform').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const text = document.getElementById('tin').value;
-  const res = await fetch('/api/text', {method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({text})});
-  show(await res.json());
-});
-
-// ---- servo sliders -------------------------------------------------------
+const $ = (id) => document.getElementById(id);
 const post = async (path, body) => {
+  const t0 = performance.now();
   const r = await fetch(path, {method: 'POST',
     headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
-  return r.json();
+  const data = await r.json().catch(() => ({ok: false, error: 'bad reply'}));
+  data._ms = Math.round(performance.now() - t0);
+  return data;
 };
-const lastSent = {};   // channel -> ts, client-side write throttle
-let servoEnabled = false;
+const get = async (path) => (await fetch(path)).json();
+let servoEnabled = false, motorEnabled = false, lastMs = null;
 
+// ---------- plain-English status (showcase) ----------
+function setStatus(big, sub) {
+  $('bigstatus').textContent = big;
+  if (sub !== undefined) $('substatus').textContent = sub;
+}
+function describeParsed(r, text) {
+  if (!r.ok) return ['Not sent', r.error || 'server refused it'];
+  const map = {
+    goto: [`Looking for: ${r.target}`, 'Ready — tap Launch drive and the tank will go. Nothing has moved yet.'],
+    drive: ['Drive command parsed', `${r.label} — preview only, no motion sent from Showcase.`],
+    arm: ['Arm command parsed', `${r.label} — preview only, no motion sent from Showcase.`],
+    camera: ['Camera command parsed', `${r.label} — preview only, no motion sent from Showcase.`],
+    stop: ['Stop parsed', 'Preview only here. Use Manual STOP for a live stop when motors are enabled.'],
+    estop: ['Emergency stop parsed', 'Preview only here. Use Manual STOP for a live stop when motors are enabled.'],
+    unknown: ['I don\u2019t understand that', (r.reason || '') + ' — nothing sent.'],
+    refused: ['Refused', (r.reason || '') + ' — nothing sent.'],
+    ambiguous: ['Say one thing at a time', (r.reason || '') + ' — nothing sent.'],
+  };
+  return map[r.kind] || [r.kind || 'Parsed', r.reason || 'Preview only — nothing sent.'];
+}
+
+// ---------- modes ----------
+let mode = 'manual';
+async function setMode(next) {
+  if (mode === 'manual' && next !== 'manual') await sendDrive(0, 0, true);
+  mode = next;
+  $('modeManual').classList.toggle('on', mode === 'manual');
+  $('modeShow').classList.toggle('on', mode === 'show');
+  $('layerManual').hidden = mode !== 'manual';
+  $('layerShow').hidden = mode !== 'show';
+  $('statuscard').hidden = mode !== 'show';
+  $('gearbtn').style.bottom = mode === 'manual'
+    ? 'calc(190px + env(safe-area-inset-bottom))' : 'calc(250px + env(safe-area-inset-bottom))';
+  if (mode === 'show') refreshTelemetry();
+}
+$('modeManual').addEventListener('click', () => setMode('manual'));
+$('modeShow').addEventListener('click', () => setMode('show'));
+
+// ---------- thumbsticks ----------
+function makeStick(el, onVec) {
+  const nub = el.querySelector('.nub');
+  let pid = null;
+  const vec = {x: 0, y: 0};
+  function render() {
+    nub.style.transform = `translate(${vec.x * 40}px, ${vec.y * 40}px)`;
+  }
+  function update(e) {
+    const r = el.getBoundingClientRect();
+    let dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+    let dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    const m = Math.hypot(dx, dy);
+    if (m > 1) { dx /= m; dy /= m; }
+    vec.x = Math.round(dx * 100) / 100; vec.y = Math.round(dy * 100) / 100;
+    render(); onVec(vec.x, vec.y);
+  }
+  el.addEventListener('pointerdown', (e) => {
+    pid = e.pointerId; el.setPointerCapture(pid); update(e); e.preventDefault();
+  });
+  el.addEventListener('pointermove', (e) => { if (e.pointerId === pid) update(e); });
+  const end = (e) => {
+    if (e.pointerId !== pid) return;
+    pid = null; vec.x = 0; vec.y = 0; render(); onVec(0, 0);
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+  return vec;
+}
+let driveVec = {x: 0, y: 0}, camVec = {x: 0, y: 0};
+async function sendDrive(x, y, force) {
+  const cap = Number($('cap').value);
+  const r = await post('/api/drive', {x, y, cap});
+  lastMs = r._ms;
+  if (!r.ok && (x || y)) {
+    $('drivenote').textContent = r.error || 'drive refused';
+    setStatus('Drive refused', r.error || '');
+  } else if (r.ok && (x || y)) {
+    $('drivenote').textContent = '';
+  }
+  return r;
+}
+makeStick($('stickDrive'), (x, y) => { driveVec = {x, y}; if (!x && !y) sendDrive(0, 0, true); });
+makeStick($('stickCam'), (x, y) => { camVec = {x, y}; });
+setInterval(async () => {
+  if (mode !== 'manual') return;
+  if (driveVec.x || driveVec.y) sendDrive(driveVec.x, driveVec.y, false);
+  if (camVec.x || camVec.y) {
+    const r = await post('/api/camera', {x: camVec.x, y: camVec.y});
+    if (r.ok) { servoState = r.state; drawArm(); renderServoVals(); $('drivenote').textContent = ''; }
+    else $('drivenote').textContent = r.error || 'camera refused';
+  }
+}, 140);
+$('cap').addEventListener('input', () => { $('capval').textContent = $('cap').value + '%'; });
+async function fullStop() {
+  driveVec = {x: 0, y: 0};
+  await sendDrive(0, 0, true);
+  setStatus('Stopped', 'Stop sent from Manual.');
+}
+$('stopbtn').addEventListener('pointerdown', (e) => { e.preventDefault(); fullStop(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) sendDrive(0, 0, true); });
+window.addEventListener('blur', () => sendDrive(0, 0, true));
+$('centrecam').addEventListener('click', async () => {
+  await post('/api/servo', {channel: 6, angle: 74});
+  const r = await post('/api/servo', {channel: 5, angle: 72});
+  if (r.ok) { servoState = r.state; drawArm(); renderServoVals(); }
+});
+
+// ---------- showcase: typed instructions + tap ----------
+async function submitText(text) {
+  const r = await post('/api/text', {text});
+  const [big, sub] = describeParsed(r, text);
+  setStatus(big, sub);
+  noteGoto(r, text);
+}
+$('tform').addEventListener('submit', (e) => {
+  e.preventDefault(); submitText($('tin').value);
+});
+document.querySelectorAll('.chip').forEach(c =>
+  c.addEventListener('click', () => { $('tin').value = c.dataset.text; submitText(c.dataset.text); }));
+function reloadCam() {
+  // The USB camera drops and re-enumerates on its flaky cable; a fresh
+  // src makes the server spawn a fresh producer instead of the phone
+  // holding a dead last frame.
+  $('cam').src = '/api/frame?t=' + Date.now();
+}
+$('cam').addEventListener('error', () => { if (!camReleased) setTimeout(reloadCam, 1500); });
+$('cam').addEventListener('pointerdown', async (e) => {
+  if (mode !== 'show') { reloadCam(); return; }
+  const r = e.target.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  const m = $('tapmark');
+  m.style.left = (x * 100) + '%'; m.style.top = (y * 100) + '%'; m.style.display = 'block';
+  const res = await post('/api/tap', {x, y});
+  setStatus('Tap noted', res.ok
+    ? `Focus preview at ${Math.round(x * 100)}%, ${Math.round(y * 100)}% — vision focus is not wired in this page yet.`
+    : (res.error || 'tap refused'));
+});
+
+// ---------- launch: page queues, desktop launcher drives ----------
+let lastGotoText = '', launchTimer = null, camReleased = false;
+function noteGoto(r, text) {
+  if (r && r.kind === 'goto' && r.target) {
+    lastGotoText = text || ('go get the ' + r.target);
+    $('launchBtn').disabled = false;
+    $('launchNote').textContent = 'Ready: ' + lastGotoText;
+  }
+}
+async function refreshLaunch() {
+  try {
+    const b = await get('/api/launch');
+    const L = b.launch || {};
+    const active = L.state === 'pending' || L.state === 'running';
+    $('launchStopBtn').hidden = !active;
+    $('launchBtn').disabled = active || !lastGotoText;
+    if (L.state === 'pending') {
+      setStatus('Queued…', 'Waiting for the desktop launcher.');
+      $('launchNote').textContent = 'Queued: ' + (L.text || '');
+    } else if (L.state === 'running') {
+      setStatus('Driving: ' + (L.target || ''), L.detail || 'Working…');
+      $('launchNote').textContent = L.detail || 'Driving…';
+    } else if (L.state === 'done') {
+      setStatus('Done', L.detail || 'Drive finished.');
+      $('launchNote').textContent = L.detail || 'Done.';
+      stopLaunchPolling();
+    } else if (L.state === 'failed') {
+      setStatus('Drive failed', L.detail || '');
+      $('launchNote').textContent = L.detail || 'Failed.';
+      stopLaunchPolling();
+    } else if (L.state === 'stopped') {
+      setStatus('Stopped', L.detail || 'Drive stopped.');
+      $('launchNote').textContent = L.detail || 'Stopped.';
+      stopLaunchPolling();
+    }
+  } catch { /* launcher state unknown; keep polling while active */ }
+}
+function stopLaunchPolling() {
+  if (launchTimer) { clearInterval(launchTimer); launchTimer = null; }
+}
+$('launchBtn').addEventListener('click', async () => {
+  if (!lastGotoText) return;
+  const r = await post('/api/launch', {text: lastGotoText});
+  if (!r.ok) {
+    $('launchNote').textContent = r.error || 'Launch refused.';
+    return;
+  }
+  // The drive loop needs the USB camera: pause our feed so its
+  // producer exits, and do not let the error handler respawn it.
+  camReleased = true;
+  $('cam').removeAttribute('src');
+  setStatus('Queued…', 'Camera handed to the drive loop.');
+  $('launchNote').textContent = 'Queued: ' + lastGotoText;
+  stopLaunchPolling();
+  launchTimer = setInterval(refreshLaunch, 1200);
+  refreshLaunch();
+});
+$('launchStopBtn').addEventListener('click', async () => {
+  await post('/api/launch/stop', {});
+  $('launchNote').textContent = 'Stop requested…';
+  refreshLaunch();
+});
+
+// ---------- speech (preview-only: results are parsed, never sent) ----------
+// Primary STT is the phone browser's own recognition (free, no Baseten
+// spend — the $100 credits are Muse-Spark-only and Whisper can't use
+// them). Finals land on /api/speech/transcript. If the browser has no
+// recognition but the server has Baseten STT wired, the mic falls back
+// to recording a WAV for /api/speech/audio.
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let speechWired = false;
+async function refreshSpeech() {
+  try {
+    const s = await get('/api/speech/status');
+    const sp = s.speech || {};
+    speechWired = !!s.wired;
+    const t = $('speechToggle');
+    t.disabled = !(sp.enabled || SpeechRec);
+    if (!refreshSpeech._init) {
+      t.checked = !!(sp.enabled || SpeechRec);
+      refreshSpeech._init = true;
+    }
+    $('speechNote').textContent = SpeechRec
+      ? 'Phone speech recognition — hold the mic button and talk.'
+      : (speechWired
+        ? 'Baseten speech live — hold the mic button and talk.'
+        : 'No speech recognition in this browser — typed only for now.');
+    const ready = speechWired || !!SpeechRec;
+    $('pillSpeech').textContent = ready ? 'SPEECH READY' : 'SPEECH OFF';
+    $('pillSpeech').className = 'pill ' + (ready ? 'live' : 'off');
+    updateMicAvailability();
+  } catch { $('speechNote').textContent = 'Speech status unavailable.'; }
+}
+$('speechToggle').addEventListener('change', refreshSpeech);
+async function submitSpeechText(text) {
+  const r = await post('/api/speech/transcript', {text});
+  if (r.ok) {
+    $('tin').value = text;
+    const [big, sub] = describeParsed(r, text);
+    setStatus(big, `Heard: "${text}" — ${sub}`);
+    $('micNote').textContent = 'Heard: ' + text;
+    noteGoto(r, text);
+  } else {
+    setStatus('Speech failed', r.error || 'server refused the transcript');
+    $('micNote').textContent = r.error || 'Speech failed.';
+  }
+}
+
+// Hold-to-talk: capture mono PCM, downsample to 16 kHz, POST one WAV
+// utterance. The server transcribes on its background worker and returns
+// a parser preview — nothing here can move the tank.
+let micCtx = null, micStream = null, micChunks = [], micTimer = null;
+let recog = null, recogFinal = '';
+function updateMicAvailability() {
+  const btn = $('micBtn');
+  const on = $('speechToggle').checked;
+  if (SpeechRec) {
+    btn.disabled = !on;
+    $('micNote').textContent = on
+      ? 'Hold the button, say one command.'
+      : 'Enable Speech above to use the mic.';
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    btn.disabled = true;
+    $('micNote').textContent =
+      'Mic needs HTTPS or localhost — typed input only on this connection.';
+    return;
+  }
+  btn.disabled = !speechWired || !on;
+  $('micNote').textContent = speechWired
+    ? (on ? 'Hold the button, say one command.'
+          : 'Enable Speech above to use the mic.')
+    : 'Speech not live on the server.';
+}
+function recStart(e) {
+  e.preventDefault();
+  if ($('micBtn').disabled || recog) return;
+  recog = new SpeechRec();
+  recog.lang = 'en-US';
+  recog.interimResults = true;
+  recog.continuous = false;
+  recog.maxAlternatives = 1;
+  recogFinal = '';
+  recog.onresult = (ev) => {
+    let interim = '';
+    for (const res of ev.results) {
+      if (res.isFinal) recogFinal += res[0].transcript;
+      else interim += res[0].transcript;
+    }
+    $('micNote').textContent = 'Hearing: ' + (recogFinal || interim || '…');
+  };
+  recog.onerror = (ev) => {
+    const err = ev.error || 'unknown';
+    if (err === 'not-allowed' || err === 'service-not-allowed') {
+      $('micNote').textContent =
+        'Mic blocked: this page needs HTTPS for the mic (or treat this '
+        + 'address as secure in chrome://flags). Typed input still works.';
+      setStatus('Mic blocked',
+                'Needs HTTPS or the secure-origin flag. Typed input works.');
+    } else {
+      $('micNote').textContent = 'Mic error: ' + err;
+      setStatus('Mic error', err);
+    }
+    recog = null;
+  };
+  recog.onend = () => {
+    const text = recogFinal.trim();
+    recog = null;
+    if (text) { submitSpeechText(text); return; }
+    // No final: the hold is over, so the screen must say so.
+    setStatus('Nothing heard', 'Hold the button and say one command.');
+    $('micNote').textContent = 'Nothing heard — try again.';
+  };
+  try {
+    recog.start();
+    $('micNote').textContent = 'Listening… release to send.';
+    setStatus('Listening…', 'Say one command, then release.');
+    micTimer = setTimeout(() => { if (recog) recog.stop(); }, 12000);
+  } catch { recog = null; }
+}
+function recStop() {
+  clearTimeout(micTimer);
+  if (recog) {
+    // Leave "Listening…" immediately; onend settles the final state.
+    setStatus('Transcribing…', 'One moment.');
+    $('micNote').textContent = 'Transcribing…';
+    try { recog.stop(); } catch { recog = null; }
+  }
+}
+
+// Baseten streaming (when the server reports wired): PCM frames go up
+// over one websocket while we poll /api/speech/latest for partials and
+// the routed final. This is leg one of duplex — live ears, no clips.
+let streamWs = null, streamCtx = null, streamMedia = null;
+let streamProc = null, streamPoll = null, lastRoutedSeq = -1;
+function displayRouted(routed) {
+  if (!routed) return;
+  if (routed.text) $('tin').value = routed.text;
+  const [big, sub] = describeParsed({ok: true, ...routed}, routed.text || '');
+  setStatus(big, `Heard: "${routed.text || ''}" — ${sub}`);
+  $('micNote').textContent = 'Heard: ' + (routed.text || '(empty)');
+  noteGoto(routed, routed.text || '');
+}
+async function pollLatest() {
+  try {
+    const l = await get('/api/speech/latest');
+    if (l.partial) $('micNote').textContent = 'Hearing: ' + l.partial;
+    if (l.routed && l.routed.seq !== lastRoutedSeq) {
+      lastRoutedSeq = l.routed.seq;
+      displayRouted(l.routed);
+    }
+  } catch { /* next tick retries */ }
+}
+async function streamStart(e) {
+  e.preventDefault();
+  if ($('micBtn').disabled || streamWs) return;
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  streamWs = new WebSocket(proto + '//' + location.host + '/api/speech/stream');
+  streamWs.binaryType = 'arraybuffer';
+  try {
+    streamMedia = await navigator.mediaDevices.getUserMedia({audio: true});
+  } catch {
+    $('micNote').textContent = location.protocol === 'https:'
+      ? 'Microphone permission denied.'
+      : 'Mic blocked: this page needs HTTPS for the mic (or treat this '
+        + 'address as secure in chrome://flags). Typed input still works.';
+    try { streamWs.close(); } catch {}
+    streamWs = null;
+    return;
+  }
+  streamCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = streamCtx.createMediaStreamSource(streamMedia);
+  streamProc = streamCtx.createScriptProcessor(2048, 1, 1);
+  const rate = streamCtx.sampleRate;
+  streamProc.onaudioprocess = (ev) => {
+    if (!streamWs || streamWs.readyState !== 1) return;
+    const f32 = downsampleTo16k(
+      new Float32Array(ev.inputBuffer.getChannelData(0)), rate);
+    const i16 = new Int16Array(f32.length);
+    for (let i = 0; i < f32.length; i++)
+      i16[i] = Math.max(-32768, Math.min(32767, Math.round(f32[i] * 32767)));
+    streamWs.send(i16.buffer);
+  };
+  src.connect(streamProc); streamProc.connect(streamCtx.destination);
+  $('micNote').textContent = 'Listening (Baseten)… release to send.';
+  setStatus('Listening…', 'Say one command, then release.');
+  streamPoll = setInterval(pollLatest, 400);
+  micTimer = setTimeout(streamStop, 15000);
+}
+async function streamStop() {
+  clearTimeout(micTimer);
+  if (streamPoll) { clearInterval(streamPoll); streamPoll = null; }
+  if (streamProc) { try { streamProc.disconnect(); } catch {} streamProc = null; }
+  if (streamMedia) {
+    streamMedia.getTracks().forEach(t => t.stop()); streamMedia = null;
+  }
+  if (streamCtx) { try { await streamCtx.close(); } catch {} streamCtx = null; }
+  if (streamWs) {
+    const ws = streamWs; streamWs = null;
+    const seqAtStop = lastRoutedSeq;
+    setStatus('Transcribing…', 'One moment.');
+    $('micNote').textContent = 'Transcribing…';
+    try { ws.send(JSON.stringify({type: 'end'})); } catch {}
+    setTimeout(() => { try { ws.close(); } catch {} pollLatest(); }, 500);
+    setTimeout(() => {
+      if (lastRoutedSeq === seqAtStop
+          && $('bigstatus').textContent === 'Transcribing…') {
+        setStatus('Nothing heard', 'Hold the button and say one command.');
+        $('micNote').textContent = 'Nothing heard — try again.';
+      }
+    }, 1500);
+  }
+}
+$('speechToggle').addEventListener('change', updateMicAvailability);
+function downsampleTo16k(buf, srcRate) {
+  if (srcRate === 16000) return buf;
+  const ratio = srcRate / 16000;
+  const out = new Float32Array(Math.floor(buf.length / ratio));
+  for (let i = 0; i < out.length; i++) out[i] = buf[Math.floor(i * ratio)];
+  return out;
+}
+function encodeWav(samples) {
+  const buf = new ArrayBuffer(44 + samples.length * 2);
+  const v = new DataView(buf);
+  const wstr = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  wstr(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true);
+  wstr(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true); v.setUint32(24, 16000, true);
+  v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  wstr(36, 'data'); v.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 32768 : s * 32767, true);
+  }
+  return new Blob([buf], {type: 'audio/wav'});
+}
+async function micStart(e) {
+  if (speechWired) { streamStart(e); return; }
+  if (SpeechRec) { recStart(e); return; }
+  e.preventDefault();
+  if ($('micBtn').disabled || micStream) return;
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({audio: true});
+  } catch { $('micNote').textContent = 'Microphone permission denied.'; return; }
+  micCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = micCtx.createMediaStreamSource(micStream);
+  const proc = micCtx.createScriptProcessor(4096, 1, 1);
+  micChunks = [];
+  proc.onaudioprocess = (ev) =>
+    micChunks.push(new Float32Array(ev.inputBuffer.getChannelData(0)));
+  src.connect(proc); proc.connect(micCtx.destination);
+  $('micNote').textContent = 'Listening… release to send.';
+  setStatus('Listening…', 'Say one command, then release.');
+  micTimer = setTimeout(micStop, 12000);
+}
+async function micStop() {
+  if (streamWs) { streamStop(); return; }
+  if (SpeechRec) { recStop(); return; }
+  if (!micStream) return;
+  clearTimeout(micTimer);
+  micStream.getTracks().forEach(t => t.stop()); micStream = null;
+  const rate = micCtx ? micCtx.sampleRate : 16000;
+  if (micCtx) { try { await micCtx.close(); } catch {} micCtx = null; }
+  let total = 0; micChunks.forEach(c => total += c.length);
+  const merged = new Float32Array(total);
+  let off = 0; micChunks.forEach(c => { merged.set(c, off); off += c.length; });
+  micChunks = [];
+  if (!total) { $('micNote').textContent = 'Nothing heard — try again.'; return; }
+  $('micNote').textContent = 'Transcribing…';
+  setStatus('Transcribing…', '');
+  try {
+    const r = await fetch('/api/speech/audio', {method: 'POST',
+      headers: {'Content-Type': 'audio/wav'},
+      body: encodeWav(downsampleTo16k(merged, rate))});
+    const data = await r.json().catch(() => ({ok: false, error: 'bad reply'}));
+    if (data.ok) {
+      if (data.text) $('tin').value = data.text;
+      const [big, sub] = describeParsed(data, data.text || '');
+      setStatus(big, `Heard: "${data.text || ''}" — ${sub}`);
+      $('micNote').textContent = 'Heard: ' + (data.text || '(empty)');
+    } else {
+      setStatus('Speech failed', data.error || 'no transcript');
+      $('micNote').textContent = data.error || 'Speech failed.';
+    }
+  } catch { setStatus('Speech failed', 'network error'); }
+}
+$('micBtn').addEventListener('pointerdown', (e) => {
+  // Capture the pointer so a drifting finger doesn't end the hold, and
+  // claim the touch so the browser doesn't turn it into a scroll/menu.
+  try { $('micBtn').setPointerCapture(e.pointerId); } catch {}
+  micStart(e);
+});
+$('micBtn').addEventListener('pointerup', micStop);
+$('micBtn').addEventListener('pointercancel', micStop);
+$('micBtn').addEventListener('pointerleave', () => { if (micStream || recog || streamWs) micStop(); });
+// A long-press must never open the image/context menu ("Download
+// image") — that menu steals the touch and ends the recording early.
+$('micBtn').addEventListener('contextmenu', (e) => e.preventDefault());
+$('cam').addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+
+// ---------- telemetry ----------
+async function refreshTelemetry() {
+  const el = $('telemetry');
+  try {
+    const t0 = performance.now();
+    const t = await get('/api/telemetry');
+    const ms = Math.round(performance.now() - t0);
+    const sp = t.speech || {};
+    el.innerHTML = [
+      ['Servos', t.servo_enabled ? 'LIVE' : 'off (safe)'],
+      ['Motors', t.motor_enabled ? 'LIVE' : 'off (safe)'],
+      ['Motor cap', (t.motor_cap ?? '—') + '% max'],
+      ['Speech', sp.enabled ? 'ready' : 'not configured'],
+      ['Ultrasonic', t.ultrasonic || '—'],
+      ['Page reply', (lastMs ?? ms) + ' ms'],
+      ['Camera', t.camera || '—'],
+      ['Servo pose', t.servo ? Object.entries(t.servo.state || {}).map(([k, v]) => `ch${k}:${v}°`).join(' ') : '—'],
+    ].map(([k, v]) => `<div><b>${k}</b>${v}</div>`).join('');
+  } catch { el.innerHTML = '<div><b>Telemetry</b>unavailable</div>'; }
+}
+$('telemetryBtn').addEventListener('click', () => {
+  const el = $('telemetry');
+  el.hidden = !el.hidden;
+  if (!el.hidden) refreshTelemetry();
+});
+setInterval(() => { if (mode === 'show' && !$('telemetry').hidden) refreshTelemetry(); }, 2500);
+
+// ---------- arm model (our own; the stock XiaoR files have no GUI) ----------
+// Schematic side view. ch2 = shoulder lift, ch3 = claw rotation (handle),
+// ch4 = claw open/close, ch1 = base rotation (slider below the picture).
+// Angles are last-COMMANDED state — this MCU has no position telemetry.
+let servoState = {1: 140, 2: 20, 3: 87, 4: 100, 5: 72, 6: 74};
+let servoLimits = {1: [0, 140], 2: [20, 180], 3: [0, 180], 4: [40, 100], 5: [30, 120], 6: [0, 75]};
+const BASE = {x: 78, y: 176}, L1 = 84, L2 = 78;
+const clampCh = (ch, a) => Math.max(servoLimits[ch][0], Math.min(servoLimits[ch][1], Math.round(a)));
+const rad = (d) => d * Math.PI / 180;
+function armPoints() {
+  const th = rad(Number(servoState[2]) - 180);
+  const elbow = {x: BASE.x + L1 * Math.cos(th), y: BASE.y + L1 * Math.sin(th)};
+  const tf = th - rad(35);
+  const claw = {x: elbow.x + L2 * Math.cos(tf), y: elbow.y + L2 * Math.sin(tf)};
+  const gap = 3 + (Number(servoState[4]) - 40) / 60 * 13;
+  const fx = Math.cos(tf), fy = Math.sin(tf), px = -fy, py = fx;
+  const rot = rad(Number(servoState[3]) - 90);
+  return {th, elbow, claw,
+    pTop: {x: claw.x + fx * 28 + px * gap, y: claw.y + fy * 28 + py * gap},
+    pBot: {x: claw.x + fx * 28 - px * gap, y: claw.y + fy * 28 - py * gap},
+    rotH: {x: claw.x + 36 * Math.cos(rot), y: claw.y + 36 * Math.sin(rot)}};
+}
+function setLine(id, a, b) {
+  const el = $(id);
+  el.setAttribute('x1', a.x); el.setAttribute('y1', a.y);
+  el.setAttribute('x2', b.x); el.setAttribute('y2', b.y);
+}
+function setDot(id, p) { const el = $(id); el.setAttribute('cx', p.x); el.setAttribute('cy', p.y); }
+function drawArm() {
+  const p = armPoints();
+  setLine('linkUpper', BASE, p.elbow);
+  setLine('linkFore', p.elbow, p.claw);
+  setLine('prongTop', p.claw, p.pTop);
+  setLine('prongBot', p.claw, p.pBot);
+  setDot('jointElbow', p.elbow); setDot('jointClaw', p.claw); setDot('rotHandle', p.rotH);
+  const dash = document.querySelector('#armsvg .dash');
+  dash.setAttribute('x1', p.claw.x); dash.setAttribute('y1', p.claw.y);
+  dash.setAttribute('x2', p.rotH.x); dash.setAttribute('y2', p.rotH.y);
+  $('armBase').value = servoState[1];
+  $('armBaseVal').textContent = servoState[1] + '°';
+  renderServoVals();
+}
+function renderServoVals() {
+  $('armvals').textContent =
+    `base ch1 ${servoState[1]}° · shoulder ch2 ${servoState[2]}° · wrist ch3 ${servoState[3]}° · claw ch4 ${servoState[4]}°` +
+    (servoEnabled ? '' : ' — SERVO OFF: picture preview only, nothing sent');
+}
+const armLast = {};
+async function sendServoCh(ch, angle) {
+  angle = clampCh(ch, angle);
+  servoState[ch] = angle; drawArm();
+  if (!servoEnabled) return;
+  const now = Date.now();
+  if (now - (armLast[ch] || 0) < 120) return;
+  armLast[ch] = now;
+  const r = await post('/api/servo', {channel: ch, angle});
+  if (r.ok) { servoState = r.state; drawArm(); } else setStatus('Servo refused', r.error || '');
+}
+function svgPoint(e) {
+  const r = $('armsvg').getBoundingClientRect();
+  return {x: (e.clientX - r.left) / r.width * 320, y: (e.clientY - r.top) / r.height * 230};
+}
+function armDrag(handle, ch, angleFromEvent) {
+  let pid = null, lastAngle = null;
+  handle.addEventListener('pointerdown', (e) => {
+    pid = e.pointerId; handle.setPointerCapture(pid); e.preventDefault();
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== pid) return;
+    const a = angleFromEvent(svgPoint(e));
+    if (a !== null && isFinite(a)) { lastAngle = a; sendServoCh(ch, a); }
+  });
+  const end = (e) => {
+    if (e.pointerId !== pid) return;
+    pid = null;
+    if (lastAngle !== null) { armLast[ch] = 0; sendServoCh(ch, lastAngle); }
+  };
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+}
+armDrag($('jointElbow'), 2, (p) =>
+  Math.atan2(p.y - BASE.y, p.x - BASE.x) * 180 / Math.PI + 180);
+armDrag($('rotHandle'), 3, (p) => {
+  const c = armPoints().claw;
+  return Math.atan2(p.y - c.y, p.x - c.x) * 180 / Math.PI + 90;
+});
+armDrag($('jointClaw'), 4, (p) => {
+  const c = armPoints().claw;
+  return 40 + Math.max(0, Math.min(40, Math.hypot(p.x - c.x, p.y - c.y))) / 40 * 60;
+});
+$('armBase').addEventListener('input', () => sendServoCh(1, Number($('armBase').value)));
+$('armbtn').addEventListener('click', () => { $('armsheet').hidden = false; drawArm(); });
+$('armclose').addEventListener('click', () => { $('armsheet').hidden = true; });
+$('gearbtn').addEventListener('click', () => { $('drawer').hidden = false; loadServos(); });
+$('drawerclose').addEventListener('click', () => { $('drawer').hidden = true; });
+
+// ---------- engineering servo sliders (previous page, kept) ----------
+const lastSent = {};
 async function sendServo(ch, angle) {
   const now = Date.now();
   if (now - (lastSent[ch] || 0) < 120) return;
   lastSent[ch] = now;
   const body = await post('/api/servo', {channel: ch, angle});
-  if (!body.ok) show(body);
+  if (body.ok) { servoState = body.state; drawArm(); }
 }
-
 function renderFlags(flags) {
-  const el = document.getElementById('flags');
+  const el = $('flags');
   if (!flags.length) { el.textContent = 'no wonky flags yet'; return; }
   const byCh = {};
   flags.forEach(f => { (byCh[f.channel] = byCh[f.channel] || []).push(f); });
   el.textContent = Object.keys(byCh).sort().map(ch => {
     const fs = byCh[ch].slice().sort((a, b) => a.angle - b.angle);
     const angles = fs.map(f => f.angle + '°').join(', ');
-    const range = fs.length > 1 ? `  (range ${fs[0].angle}–${fs[fs.length-1].angle})` : '';
+    const range = fs.length > 1 ? `  (range ${fs[0].angle}–${fs[fs.length - 1].angle})` : '';
     const notes = fs.filter(f => f.note).map(f => `${f.angle}°: ${f.note}`).join(' · ');
     return `ch${ch}: ${angles}${range}${notes ? '\n  ' + notes : ''}`;
   }).join('\n');
 }
-
 async function loadServos() {
-  const data = await (await fetch('/api/servo')).json();
+  let data;
+  try { data = await get('/api/servo'); } catch { return; }
+  if (!data.ok) { $('servos').textContent = data.error || 'servo unavailable'; return; }
   servoEnabled = !!data.enabled;
-  const pill = document.getElementById('modepill');
-  pill.textContent = servoEnabled ? 'SERVO LIVE' : 'SERVO OFF';
-  pill.className = 'pill ' + (servoEnabled ? 'live' : 'off');
-  const wrap = document.getElementById('servos');
+  servoState = data.state; servoLimits = data.limits;
+  const wrap = $('servos');
   wrap.innerHTML = '';
   Object.keys(data.labels).sort().forEach(k => {
     const ch = Number(k);
@@ -121,15 +950,16 @@ async function loadServos() {
         <span>allowed ${lim[0]}–${lim[1]}°</span>
         <input type="number" id="lo${ch}" value="${lim[0]}" min="0" max="180" style="width:4em">
         <input type="number" id="hi${ch}" value="${lim[1]}" min="0" max="180" style="width:4em">
-        <button id="lim${ch}">Set limits</button>
+        <button class="toolbtn" id="lim${ch}">Set limits</button>
       </div>`;
     wrap.appendChild(row);
     const sl = row.querySelector('#sl' + ch), val = row.querySelector('#val' + ch);
     sl.addEventListener('input', () => {
       val.textContent = sl.value + '°';
+      servoState[ch] = Number(sl.value); drawArm();
       if (servoEnabled) sendServo(ch, Number(sl.value));
     });
-    sl.addEventListener('change', () => {  // final position always sent
+    sl.addEventListener('change', () => {
       if (servoEnabled) { lastSent[ch] = 0; sendServo(ch, Number(sl.value)); }
     });
     row.querySelector('#lim' + ch).addEventListener('click', async () => {
@@ -137,23 +967,40 @@ async function loadServos() {
         channel: ch,
         min: Number(row.querySelector('#lo' + ch).value),
         max: Number(row.querySelector('#hi' + ch).value)});
-      if (body.ok) { show({limits: `ch${ch} now ${body.limits[ch]}`}); loadServos(); }
-      else show(body);
+      if (body.ok) loadServos(); else alert(body.error || 'limits refused');
     });
     row.querySelector('#flag' + ch).addEventListener('click', async () => {
       const body = await post('/api/servo/flag', {
         channel: ch, angle: Number(sl.value),
         note: row.querySelector('#note' + ch).value});
-      if (body.ok) { renderFlags(body.flags); show({flagged: `ch${ch} @ ${sl.value}°`}); }
-      else show(body);
+      if (body.ok) renderFlags(body.flags); else alert(body.error || 'flag refused');
     });
   });
   renderFlags(data.flags || []);
+  drawArm();
 }
+
+// ---------- pills ----------
+async function refreshPills() {
+  try {
+    const t = await get('/api/telemetry');
+    servoEnabled = !!t.servo_enabled; motorEnabled = !!t.motor_enabled;
+    $('pillServo').textContent = servoEnabled ? 'SERVO LIVE' : 'SERVO OFF';
+    $('pillServo').className = 'pill ' + (servoEnabled ? 'live' : 'off');
+    $('pillMotor').textContent = motorEnabled ? 'MOTOR LIVE' : 'MOTOR OFF';
+    $('pillMotor').className = 'pill ' + (motorEnabled ? 'motor' : 'off');
+    if (t.servo) { servoState = t.servo.state; servoLimits = t.servo.limits; drawArm(); renderServoVals(); }
+  } catch {}
+}
+
+// ---------- init ----------
 loadServos();
-fetch('/api/status').then(r => r.json()).then(s => {
-  if (!servoEnabled) out.textContent = 'servo live control OFF — sliders disabled (server started without --enable-servo)';
-});
+refreshPills();
+refreshSpeech();
+drawArm();
+setInterval(refreshPills, 4000);
 </script>
 </body>
 </html>
+
+
