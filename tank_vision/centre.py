@@ -43,3 +43,103 @@ def sign_after_trial(before, after, axis, current_sign, min_delta=0.02):
 
 def centred(aim, tol=0.05):
     return abs(aim["dx_right"]) <= tol and abs(aim["dy_up"]) <= tol
+
+
+def camera_recenter_angles(aim, pan_angle, tilt_angle,
+                           pan_limits, tilt_limits, tol=0.05):
+    """One camera recalibration: angles that centre the target, or None.
+
+    Uses the physical mapping proven on the live head (2026-10-29 GUI
+    test): view right = ch6 DOWN, view up = ch5 UP. Unlike plan_step's
+    trial-learned signs, this is a fixed recalibration after a body
+    move: it re-derives where the target sits from a FRESH aim, so a
+    stale sign can never ping-pong the loop. Results clamp to the
+    servo limits — a clamped pan means the neck is saturated and the
+    body must spin; the caller re-recognises to see the new dx.
+    """
+    if centred(aim, tol):
+        return None
+    pan = round(pan_angle - aim["dx_right"] * FOV_H_DEG)
+    tilt = round(tilt_angle + aim["dy_up"] * FOV_V_DEG)
+    pan = max(int(pan_limits[0]), min(int(pan_limits[1]), pan))
+    tilt = max(int(tilt_limits[0]), min(int(tilt_limits[1]), tilt))
+    if pan == int(pan_angle) and tilt == int(tilt_angle):
+        return None
+    return pan, tilt
+
+
+# ---------------------------------------------------------------------------
+# Out-of-frame scan: BROAD head moves, fail-closed.
+#
+# When the target is not in frame at all, mini centreing steps are the
+# wrong tool. The scan sweeps the pan servo across its FULL left/right
+# range in two legs (current -> nearest end, then back across to the far
+# end), stopping every half-FOV so no gap is skipped, at the current
+# tilt and then at a lower floor-looking tilt. If it is not found by the
+# end of the second leg, the scan FAILS: the head returns to its origin
+# pose and the caller must not drive. Servo travel here is the physical
+# pan range (ch6 limits, 75 deg on this tank), not an assumed 180.
+# ---------------------------------------------------------------------------
+SCAN_STEP_DEG = 30.0   # half the 60 deg horizontal FOV: overlap, no gaps
+SCAN_TILT_DROP = 30    # second row looks this far toward the floor
+
+
+def scan_pan_positions(pan_limits, current, step=SCAN_STEP_DEG):
+    """Ordered pan stops covering [lo, hi], broad steps, two legs.
+
+    Starts toward the nearest end first, then sweeps back across the
+    full range. Both limits are always included; no stop is more than
+    `step` from the previous one.
+    """
+    lo, hi = int(pan_limits[0]), int(pan_limits[1])
+    stops = set()
+    a = lo
+    while a < hi:
+        stops.add(a)
+        a += int(step)
+    stops.add(hi)
+    stops = sorted(stops)
+    # Nearest grid stop to current is where leg 1 heads first.
+    start = min(range(len(stops)), key=lambda i: abs(stops[i] - current))
+    if start <= len(stops) / 2:
+        return stops[start::-1] + stops[start + 1:]
+    return stops[start:] + list(reversed(stops[:start]))
+
+
+def scan_tilts(tilt_limits, current, drop=SCAN_TILT_DROP):
+    """Tilt rows for the scan: current tilt, then one floor row."""
+    lo = int(tilt_limits[0])
+    rows = [int(current)]
+    floor_row = max(lo, int(current) - drop)
+    if floor_row != rows[0]:
+        rows.append(floor_row)
+    return rows
+
+
+def run_scan(pan_positions, tilt_rows, move_fn, recognise_fn, origin):
+    """Execute a scan. move_fn(pan, tilt)->bool, recognise_fn()->aim|None.
+
+    Recognises once per stop. On success returns the aim immediately
+    (head stays where it found the target). On any failure — target not
+    found, or a move refused — restores the origin pose and returns
+    None. The caller drives only on a non-None aim.
+    """
+    last = None
+
+    def restore():
+        if origin is not None and last != origin:
+            move_fn(origin[0], origin[1])
+
+    for tilt in tilt_rows:
+        for pan in pan_positions:
+            if (pan, tilt) == last:
+                continue
+            if not move_fn(pan, tilt):
+                restore()
+                return None
+            last = (pan, tilt)
+            aim = recognise_fn()
+            if aim is not None:
+                return aim   # head stays where it found the target
+    restore()
+    return None

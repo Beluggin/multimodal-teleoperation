@@ -23,7 +23,10 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tank_vision.centre import centred, plan_step, sign_after_trial  # noqa: E402
+from tank_vision.centre import (  # noqa: E402
+    camera_recenter_angles, centred, plan_step, run_scan,
+    scan_pan_positions, scan_tilts, sign_after_trial,
+)
 from tank_vision.meta_sam import segment_text  # noqa: E402
 
 SSH = ["ssh", "-o", "ConnectTimeout=10", "tank-lan"]
@@ -106,12 +109,110 @@ def recognise_tracked(prompt, prev_centroid=None, samples=2):
     return mid, s
 
 
+def scan_for_target(prompt):
+    """Wide out-of-frame scan (servos only, no motors).
+
+    Sweeps the full pan range in two broad legs at the current tilt,
+    then at a floor tilt, recognising at every stop. Found: returns the
+    aim with the head left on the target. Not found: head restored to
+    its origin pose, returns None — the caller must not drive.
+    """
+    state = api("/api/servo")
+    if not state.get("enabled"):
+        print("scan: servo not enabled — aborting")
+        return None
+    origin = (state["state"]["5"], state["state"]["6"])
+    pans = scan_pan_positions(
+        (state["limits"]["6"][0], state["limits"]["6"][1]), origin[1])
+    tilts = scan_tilts(
+        (state["limits"]["5"][0], state["limits"]["5"][1]), origin[0])
+    print(f"scan: pans {pans} tilts {tilts} from origin tilt={origin[0]} "
+          f"pan={origin[1]}")
+
+    def move(pan, tilt):
+        r = api("/api/servo", {"channel": 6, "angle": int(pan)})
+        if not r.get("ok"):
+            print(f"scan: pan refused {r}")
+            return False
+        r = api("/api/servo", {"channel": 5, "angle": int(tilt)})
+        if not r.get("ok"):
+            print(f"scan: tilt refused {r}")
+            return False
+        time.sleep(0.8)
+        return True
+
+    def look():
+        aim, _ = recognise_tracked(prompt)
+        print(f"scan: look -> {'aim=' + str(aim) if aim else 'nothing'}")
+        return aim
+
+    # run_scan works in (pan, tilt) pairs; origin above is (tilt, pan).
+    aim = run_scan(pans, tilts, move, look, origin=(origin[1], origin[0]))
+    if aim is None:
+        print("scan: not found in range — head restored, FAIL (no drive)")
+    else:
+        print(f"scan: FOUND aim={aim}")
+    return aim
+
+
+def recenter_servo(aim):
+    """Move pan/tilt once to centre `aim`; True when the head is settled.
+
+    Servo half of recalibrate_camera, split out so the fast loop can
+    pair the same physical recentre with a local MobileSAM re-look
+    instead of a Meta one. False = no move needed or a move refused;
+    the caller keeps its current aim either way.
+    """
+    if aim is None:
+        return False
+    state = api("/api/servo")
+    if not state.get("enabled"):
+        return False
+    angles = camera_recenter_angles(
+        aim, state["state"]["6"], state["state"]["5"],
+        (state["limits"]["6"][0], state["limits"]["6"][1]),
+        (state["limits"]["5"][0], state["limits"]["5"][1]))
+    if angles is None:
+        return False
+    pan, tilt = angles
+    print(f"recalibrate: pan->{pan} tilt->{tilt} (aim was {aim})")
+    for ch, ang in ((6, pan), (5, tilt)):
+        if ang != state["state"][str(ch)]:
+            r = api("/api/servo", {"channel": ch, "angle": int(ang)})
+            if not r.get("ok"):
+                print(f"recalibrate: ch{ch} refused {r} — keeping old aim")
+                return False
+    time.sleep(0.8)
+    return True
+
+
+def recalibrate_camera(prompt, aim):
+    """Recentre the camera on the target after a body move, then re-look.
+
+    One bounded pan/tilt recalibration from the FRESH aim (never a
+    remembered sign), followed by a new recognition. Returns the new
+    aim, the old aim when no recalibration was needed/possible, or
+    None when the re-look lost the target.
+    """
+    if aim is None:
+        return None
+    if not recenter_servo(aim):
+        return aim
+    centroid = (aim["dx_right"] + 0.5, 0.5 - aim["dy_up"])
+    new_aim, _ = recognise_tracked(prompt, centroid)
+    print(f"recalibrate: re-look aim={new_aim}")
+    return new_aim
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--prompt", default="white box")
     ap.add_argument("--tol", type=float, default=0.05)
     ap.add_argument("--max-steps", type=int, default=6)
     ap.add_argument("--search", action="store_true", help="tilt-sweep to find target first")
+    ap.add_argument("--scan", action="store_true",
+                    help="wide pan scan over the full L/R range (two tilts) "
+                         "to find an out-of-frame target; fails closed")
     args = ap.parse_args(argv)
 
     state = api("/api/servo")
@@ -121,6 +222,8 @@ def main(argv=None):
     print(f"start pose ch5={state['state']['5']} ch6={state['state']['6']}")
 
     aim, s = recognise_tracked(args.prompt)
+    if aim is None and args.scan:
+        aim = scan_for_target(args.prompt)
     if aim is None and args.search:
         # Bounded tilt search: step ch5 (tilt) down through its range,
         # recognising after each step, until the target enters frame.
