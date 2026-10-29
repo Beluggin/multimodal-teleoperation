@@ -137,6 +137,86 @@ class ClassifyCameraLightsQuery(unittest.TestCase):
                                     for c in a.commands))
 
 
+class ClassifyGoto(unittest.TestCase):
+    def test_goto_extraction(self):
+        for text, target in (("go to the shoe", "shoe"),
+                             ("go get the shoe", "shoe"),
+                             ("go get the shoe!", "shoe"),
+                             ("get the shoe", "shoe"),
+                             ("fetch the red bag", "red bag"),
+                             ("go find the white box", "white box"),
+                             ("go to the kitchen", "kitchen"),
+                             ("go to shoe", "shoe")):
+            with self.subTest(text=text):
+                a = classify(text)
+                self.assertEqual(a.kind, "goto")
+                self.assertEqual(a.target, target)
+                self.assertEqual(a.commands, [])
+
+    def test_goto_safety(self):
+        # Negated goto never routes anywhere.
+        a = classify("don't go to the shoe")
+        self.assertEqual(a.kind, "refused")
+        self.assertEqual(a.commands, [])
+        # Goto plus another action is ambiguous, never executed.
+        a = classify("go to the shoe and wave")
+        self.assertEqual(a.kind, "ambiguous")
+        self.assertEqual(a.commands, [])
+        # "go to the left" hits the drive phrase — ambiguous, not a target.
+        a = classify("go to the left")
+        self.assertEqual(a.kind, "ambiguous")
+        self.assertEqual(a.commands, [])
+        # Stop still wins over a goto clause.
+        self.assertEqual(classify("go to the shoe stop").label,
+                         "drive.stop")
+        # Empty target has nothing to route to.
+        a = classify("go to the")
+        self.assertEqual(a.kind, "unknown")
+        self.assertEqual(a.commands, [])
+
+    def test_goto_synonyms(self):
+        # Speech-friendly ways to say "go look at the thing": all must
+        # route to the same no-motion goto with the target extracted.
+        for text, target in (
+                ("investigate the shoe", "shoe"),
+                ("check out the shoe", "shoe"),
+                ("check out that red bag", "red bag"),
+                ("examine the white box", "white box"),
+                ("inspect the shoe", "shoe"),
+                ("look at the shoe", "shoe"),
+                ("take a look at the shoe", "shoe"),
+                ("have a look at the shoe", "shoe"),
+                ("go look at the shoe", "shoe"),
+                ("go investigate the shoe", "shoe")):
+            with self.subTest(text=text):
+                a = classify(text)
+                self.assertEqual(a.kind, "goto")
+                self.assertEqual(a.target, target)
+                self.assertEqual(a.commands, [])
+
+    def test_goto_synonym_safety(self):
+        # "check" alone is NOT a goto verb: the sensors query survives.
+        self.assertEqual(classify("check the sensors").kind, "query")
+        # Negated synonym goto is refused, pronoun target is unknown.
+        a = classify("don't investigate the shoe")
+        self.assertEqual(a.kind, "refused")
+        self.assertEqual(a.commands, [])
+        a = classify("investigate it")
+        self.assertEqual(a.kind, "unknown")
+        self.assertEqual(a.commands, [])
+        # "look at the left" still collides with the drive phrase.
+        a = classify("look at the left")
+        self.assertEqual(a.kind, "ambiguous")
+        self.assertEqual(a.commands, [])
+
+    def test_goto_run_sends_nothing(self):
+        sent = []
+        sender = lambda cmd: sent.append(cmd) or {"ok": True}
+        t = x.run("go get the shoe", sender=sender, sleep=lambda s: None)
+        self.assertEqual(sent, [])
+        self.assertEqual(t["target"], "shoe")
+
+
 class LongestMatch(unittest.TestCase):
     def test_overlaps_resolve_to_longer_phrase(self):
         # "kill" alone would e-stop; the longer phrase wins.
@@ -177,7 +257,7 @@ class Safety(unittest.TestCase):
                 self.assertEqual(a.commands, [])
 
     def test_unknown_inputs(self):
-        for text in ("go to the kitchen", "make me a sandwich", "",
+        for text in ("make me a sandwich", "",
                      "   ", "blorpt"):
             with self.subTest(text=text):
                 a = classify(text)

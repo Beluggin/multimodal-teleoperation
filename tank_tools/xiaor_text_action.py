@@ -20,7 +20,10 @@ with $TANK_TOKEN (default change-me).
 Safety posture: unknown, negated ("don't ..."), and
 ambiguous ("forward and wave") inputs NEVER move. E-stop ("stop now",
 "emergency stop") skips claim and always sends emergency_stop. Read-only
-queries (sensors/status) skip claim too.
+queries (sensors/status) skip claim too. "Go to/get the <target>" inputs
+classify as kind="goto" with NO commands: this parser never moves for
+them — a desktop vision loop (tank_vision/drive_run.py --text) consumes
+the extracted target and drives in bounded, re-recognised steps.
 """
 
 import argparse
@@ -307,17 +310,62 @@ _PHRASE_RES: List[Tuple["re.Pattern", str, str]] = [
 @dataclass
 class Action:
     kind: str                 # drive|arm|camera|lights|query|speed|stop|estop|
-                              # unknown|refused|ambiguous
+                              # goto|unknown|refused|ambiguous
     label: str                # canonical name, e.g. "drive.forward"
     commands: List[dict] = field(default_factory=list)
     delays: List[float] = field(default_factory=list)
     duration: Optional[float] = None   # timed drive: auto-stop after N s
     matched: str = ""                  # phrase that fired
     reason: str = ""
+    target: str = ""                   # goto only: vision target, e.g. "shoe"
 
 
 def _no_motion(kind: str, reason: str) -> Action:
     return Action(kind=kind, label=kind, reason=reason)
+
+
+# "go to/get/find the <target>": the rest of the sentence after the verb.
+# Speech synonyms ("investigate the thing", "check out the thing", ...)
+# route to the same goto: they extract a target and never move anything.
+# Bare "check"/"look" are deliberately NOT verbs here — "check the
+# sensors" is a query and "look left" is a camera move.
+_GOTO_REST = re.compile(
+    r"\b(?:go\s+(?:to|get|find|fetch)|drive\s+to|head\s+to|get|fetch|find"
+    r"|investigate|examine|inspect|check\s+out"
+    r"|take\s+a\s+look\s+at|have\s+a\s+look\s+at|go\s+look\s+at|look\s+at"
+    r"|go\s+(?:investigate|examine|inspect))"
+    r"\s+(.*)$")
+_GOTO_DETERMINERS = {"the", "a", "an", "that", "this", "my"}
+_GOTO_TRAILING = {"now", "please"}
+_GOTO_CLAUSE = {"and", "then", "or", "for", "with"}
+_GOTO_PRONOUNS = {"it", "there", "here"}
+
+
+def _goto_rest(norm: str) -> Optional[str]:
+    """Raw text after a goto verb, or None when no goto template matches."""
+    m = _GOTO_REST.search(norm)
+    return m.group(1) if m else None
+
+
+def _clean_target(rest: str) -> Tuple[Optional[str], str]:
+    """(target, "") when clean, else (None, why-not)."""
+    words = rest.split()
+    while words and words[0] in _GOTO_DETERMINERS:
+        words.pop(0)
+    while words and words[-1] in _GOTO_TRAILING:
+        words.pop()
+    if not words:
+        return None, "empty target"
+    if any(w in _GOTO_CLAUSE for w in words):
+        return None, "extra clause"
+    if len(words) > 4:
+        return None, "target too long"
+    if not all(re.fullmatch(r"[a-z0-9][a-z0-9'-]*", w) for w in words):
+        return None, "bad target words"
+    target = " ".join(words)
+    if target in _GOTO_PRONOUNS:
+        return None, "pronoun target — name the thing"
+    return target, ""
 
 
 def classify(text: str) -> Action:
@@ -345,6 +393,35 @@ def classify(text: str) -> Action:
     distinct = {}
     for phrase, aid in accepted:
         distinct.setdefault(aid, phrase)
+
+    # Goto routing ("go get the shoe"): never a command itself. Negation
+    # refuses it, stop/estop still win, any other matched action makes it
+    # ambiguous, and a dirty target falls back to unknown.
+    rest = _goto_rest(norm)
+    if rest is not None:
+        if _NEGATOR.search(norm):
+            return _no_motion("refused",
+                              "negated command — not executing")
+        if distinct and not set(distinct) <= {"stop", "estop"}:
+            labels = sorted(ACTIONS[a].label for a in distinct)
+            return _no_motion("ambiguous",
+                              f"goto plus {', '.join(labels)} "
+                              f"— say one at a time")
+        if not distinct:
+            target, why = _clean_target(rest)
+            if target is None:
+                if why == "extra clause":
+                    return _no_motion("ambiguous",
+                                      "goto with an extra clause "
+                                      "— say one at a time")
+                return _no_motion("unknown",
+                                  f"no usable target in {text!r} ({why})")
+            return Action(kind="goto", label="goto", target=target,
+                          matched="goto",
+                          reason=f"goto target {target!r} "
+                                 f"— vision loop required, no motion sent")
+        # Only stop/estop matched alongside: fall through, stop wins.
+
     if not distinct:
         return _no_motion("unknown", f"no matching action for {text!r}")
     if len(distinct) > 1:
@@ -412,7 +489,7 @@ def classify(text: str) -> Action:
 # queries skip claim (e-stop must work even when unclaimed).
 # ---------------------------------------------------------------------------
 _CLAIM_KINDS = {"drive", "arm", "camera", "lights", "speed", "stop"}
-_NO_MOTION_KINDS = {"unknown", "refused", "ambiguous"}
+_NO_MOTION_KINDS = {"unknown", "refused", "ambiguous", "goto"}
 
 Sender = Callable[[dict], dict]
 
@@ -448,6 +525,7 @@ def run(text: str, url: str = DEFAULT_URL, token: str = DEFAULT_TOKEN,
     transcript = {
         "text": text, "kind": action.kind, "label": action.label,
         "matched": action.matched, "reason": action.reason,
+        "target": action.target,
         "sent": [], "responses": [],
     }
     if action.kind in _NO_MOTION_KINDS:
@@ -529,6 +607,10 @@ def list_phrases() -> str:
         if aid in by_action:
             lines.append(f"  {ACTIONS[aid].label}:")
             lines.append(f"    {'; '.join(by_action[aid])}")
+    lines.append("  goto (vision loop, parser sends no motion):")
+    lines.append("    go to the <target>; go get the <target>; "
+                 "fetch the <target>; investigate the <target>; "
+                 "check out the <target>; look at the <target>")
     return "\n".join(lines)
 
 
@@ -563,6 +645,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     else:
         action = classify(text)
         print(f"{action.label}  ({action.reason})")
+        if action.target:
+            print(f"  target: {action.target} "
+                  f"(vision loop required — no motion sent)")
         for cmd, pause in zip(action.commands, action.delays):
             extra = f"  +pause {pause}s" if pause else ""
             print(f"  {json.dumps(cmd)}{extra}")
@@ -597,7 +682,11 @@ def smoke() -> bool:
         ("status", "query.status", 1, False),
         ("don't move forward", "refused", 0, False),
         ("just move around", "unknown", 0, False),
-        ("go to the kitchen", "unknown", 0, False),
+        ("go get the shoe", "goto", 0, False),
+        ("investigate the shoe", "goto", 0, False),
+        ("check out the shoe", "goto", 0, False),
+        ("go to the kitchen", "goto", 0, False),
+        ("don't go to the shoe", "refused", 0, False),
         ("drive forward and wave", "ambiguous", 0, False),
     ]
     failures = 0
