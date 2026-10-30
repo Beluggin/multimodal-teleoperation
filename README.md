@@ -1,2 +1,2 @@
 # multimodal-teleoperation
-A multimodal instruction pipeline for small robots
+A multimodal instruction pipeline for small robots.  Meta AI Developer Global Hackathon 
