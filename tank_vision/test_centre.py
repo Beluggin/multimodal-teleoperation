@@ -11,6 +11,14 @@ from tank_vision.centre import (  # noqa: E402
 )
 
 
+class TestCalibration(unittest.TestCase):
+    def test_pan_forward_inside_limits_with_asymmetric_travel(self):
+        from tank_vision.centre import PAN_FORWARD
+        self.assertTrue(0 < PAN_FORWARD < 75)
+        self.assertEqual(75 - PAN_FORWARD, 22)  # view-left travel
+        self.assertEqual(PAN_FORWARD - 0, 53)   # view-right travel
+
+
 class TestCentre(unittest.TestCase):
     def test_step_clamped_and_signed(self):
         pan, tilt = plan_step({"dx_right": 0.5, "dy_up": -0.5})

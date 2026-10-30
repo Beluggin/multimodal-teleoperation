@@ -2,6 +2,40 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Voice launches, Step 1 chassis scan live, pan calibrated
+
+Voice session (Adam timing, Muse monitoring only): "Go to the
+mug" ran 5 steps in ~59 s of motor phase, final area 0.203 — close
+but no ARRIVED. "investigate the Box" scanned, found, ARRIVED
+area 0.30 — but Adam's ground truth: "It didn't move to the box."
+A follow-up "check out the box" declared ARRIVED at step 1 with
+zero motor commands. Root cause (Adam: "the box box was too
+big"): area-as-distance is size-dependent — a big box fills >0.25
+of frame from across the room, a small mug never reaches 0.25 up
+close. "go to the bottle" then effectively arrived unflagged:
+5 steps, final re-look area 0.440 dead-centre after the step cap.
+Arrival needs a size-independent signal (relative area growth or
+the dead ultrasonic), not an absolute area.
+
+Step 1 built + live (commits cd851cc): run_chassis_scan — neck
+scan fails → one bounded ~40° chassis turn (default spinr) →
+rescan, ≤3 turns, failed spin aborts. 66 vision tests green
+(7 new, red-first). Live: first attempt aborted correctly when
+the bench listener's hour expired mid-scan; revived and reran —
+neck scan 8 looks nothing, spinr 0.36 s, rescan FOUND the mug
+(out-of-frame right), 8 drive steps to final area 0.274 (the
+bottle pattern: one look short of ARRIVED), 2m34s total. Step 1
+works. Launcher was still running the old queue code path;
+drive_run subprocesses pick up the new scan automatically.
+
+Camera pan calibrated (Adam eyeball vs chassis nose; centreline
+mug method read 70 and was rejected by eye as ~20° off — the mug
+was not on the true centreline): PAN_FORWARD = ch6 53. Travel
+from straight: 22 units to the view-left limit (75), 53 units
+to view-right (0) — Adam's ~30°/50° split. Recorded as
+tank_vision.centre.PAN_FORWARD for step 2 (pan compensation).
+Favour the right side for placements until then.
+
 ## 2026-10-30 — LIVE TESTS: FastSAM fails, scan/different/moved pass (Adam present)
 
 Git first: the single Day-2 commit became 6 temporal local commits

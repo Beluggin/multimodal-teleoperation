@@ -12,6 +12,15 @@ closed on the centroid, so a wrong gain costs steps, not correctness.
 FOV_H_DEG = 60.0
 FOV_V_DEG = 45.0
 
+# Calibrated 2026-10-30 (eyeball against the chassis nose, Adam):
+# the ch6 angle where the camera looks along the chassis centreline.
+# Pan travel from straight is asymmetric — 22 servo units to the
+# 75 limit on the view-left side, 53 units to the 0 limit on the
+# view-right side (~30/50 physical degrees). Searches and spins
+# should favour view-right; a saturated pan near 75 means the neck
+# has almost no left travel left and the body must spin.
+PAN_FORWARD = 53
+
 
 def plan_step(aim, sign_pan=1, sign_tilt=1, max_step=5.0):
     """aim -> (pan_deg, tilt_deg) step, each clamped to +/-max_step.
