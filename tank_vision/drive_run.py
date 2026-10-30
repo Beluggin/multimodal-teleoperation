@@ -95,7 +95,10 @@ def step_secs_for_area(area_frac):
     return min(STEP_MAX_SECS, max(STEP_MIN_SECS, secs))
 
 
-SCAN_TURN_DEG = 40.0   # chassis turn between neck scans (step 1)
+SCAN_TURN_DEG = 60.0   # chassis turn between neck scans (step 1):
+                       # ~80 deg neck sweep minus ~20 deg overlap,
+                       # so legs cannot gap but each buys real ground
+                       # (Adam, 2026-10-30: 40 deg was too narrow)
 
 
 def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
@@ -105,7 +108,7 @@ def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
     Defaults favour `spinr`: Adam's pan is asymmetric (~50 deg one
     side of chassis-forward, ~30 the other), and the long side is
     the productive search direction. Each turn is one bounded spin
-    (~40 deg at the measured spin rate); a failed spin aborts the
+    (~60 deg at the measured spin rate); a failed spin aborts the
     search. Returns an aim or None (fail closed, no drive).
     """
     scan_fn = scan_fn or scan_for_target

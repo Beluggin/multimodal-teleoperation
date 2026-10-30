@@ -77,8 +77,8 @@ class ChassisScan(unittest.TestCase):
                            drive_fn=drives.append, max_turns=3)
         self.assertEqual(aim, {"dx_right": 0.1})
         self.assertEqual(scans, ["mug"] * 3)
-        # ~40 deg at the measured 110 deg/s spin rate, to the right.
-        self.assertEqual(drives, ["spinr 0.36 30", "spinr 0.36 30"])
+        # ~60 deg at the measured 110 deg/s spin rate, to the right.
+        self.assertEqual(drives, ["spinr 0.55 30", "spinr 0.55 30"])
 
     def test_failed_spin_aborts_search(self):
         scans = []
@@ -98,7 +98,7 @@ class ChassisScan(unittest.TestCase):
         drives = []
         chassis_scan("mug", scan_fn=lambda p: None,
                      drive_fn=drives.append, max_turns=1, spin="spinl")
-        self.assertEqual(drives, ["spinl 0.36 30"])
+        self.assertEqual(drives, ["spinl 0.55 30"])
 
 
 class DampedSpin(unittest.TestCase):
