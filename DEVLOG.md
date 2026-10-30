@@ -2,6 +2,476 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Isolated Muse: Baseten deployment MCP enabled
+
+At Adam's request, added narrow Baseten HTTPS API/docs/inference and model/
+chain endpoint exceptions to the host isolation broker. Configured backend
+and docs MCP in the separate Muse profile, preserving settings and approvals;
+existing project API key copied privately (0600), never printed or committed.
+Private pre-change backup saved outside the repo. Restart Muse to load changes.
+
+Verified from actual Bubblewrap namespace: authenticated backend initialize +
+tools/list (161 tools, including deploy_model_from_library), docs MCP (3 tools),
+Muse echo startup, all 3 policy tests, and real filesystem/network boundary
+checks. Host files remain hidden, direct network and disallowed proxy routes
+remain blocked. No deployment, inference, or physical action performed.
+
+Adam reported create_sandbox skipped for credential-shaped schema text.
+Inspected upstream public schema: it contains the dummy example
+sk-proj-demo-not-a-valid-api-key, the likely false-positive trigger. This is
+separate from model-library deployment; kept Muse's schema filter intact.
+Discovery does not certify every tool's acceptance by Muse. Whisper deployment,
+Pi runtime configuration, live transcription and duplex playback remain untested.
+Usage/scope/rollback: BASETEN_ACCESS.md; README, AGENTS, HANDOFF and speech README
+updated, including correction of contradictory STT-credit wording.
+
+## 2026-10-29 — FAST SAM SIMULATION (offline + servo-only live; no motors)
+
+Adam at work (power cut), tank on the desk at home: non-motor only,
+camera servos authorised. Desk-check of the `--fast` loop in two
+parts. Offline (`/tmp/fast_sim_a.py` on a real grabbed frame, Meta
+lock-on "computer mouse" dx −0.086): MobileSAM box-track agreed to
+~0.02 dx on the same frame, followed synthetic scene shifts in the
+right direction (Δdx +0.076 for an 8% left shift), flagged NO Meta
+recheck in 4/4 cases, steady 0.61–0.66 s/frame. Live servo-only
+(`/tmp/fast_sim.py` `fast_look`, which never touches motors): Meta
+lock-on, tracker recentered the head (pan saturated 75, tilt 72→20),
+dx pinned to 0.0 on three straight looks, area 0.084→0.276 as the
+mouse centred, 6.4 s first look then 1.70/1.75 s per look vs the
+~7.8 s/step Meta baseline. Final frame visually verified: mouse
+bottom-centre. Fast loop is desk-proven; only its motor steps remain
+unlive-tested.
+
+## 2026-10-29 — PAGE LAUNCHER: voice command can now start the drive
+
+Adam's call: launching off the page is the point of the test. Built:
+Pi queue endpoints (`POST /api/launch` goto-only, `/consume`,
+`/report`, `/stop`, `GET /api/launch` — the Pi moves nothing), desktop
+`tank_vision/launcher.py` poller (consumes one launch → drive_run on
+the exact sentence, 5 steps proven loop; page stop via SIGINT so
+drive_run's finally still sends its stop), page Launch/Stop drive
+buttons with live status polling and camera handoff (feed blanks on
+launch so the drive loop owns the USB camera). Red-first tests:
+phone and vision suites green. Pi server restarted safe + MJPEG;
+launcher started on the desktop with Adam present and his bounded
+authorisation. Live result pending his tap.
+
+LIVE (same session, Adam present/authorised): first tap ("investigate
+the shoe") scanned 8 stops to nothing and failed safe — frame grab
+showed the head aimed at a wall/tabletop, no floor in view, and this
+Croc has never answered to the prompt "shoe". Retry with the head
+tilted down, Croc side-on in the starting frame, and "check out the
+sandal": first-frame lock (area 0.019), recalibration after every
+move saturated pan at 75 and still converged, one 0.09 s spin
+correction, 5 steps, area 0.019 → 0.258 → ARRIVED, final stop sent,
+queue reported done. Arrival frame visually verified: grey Croc
+side-on, heel strap up, fills the lower frame. So the miss was
+wording + framing + light together, not semantics alone. Launcher
+stopped after the test; Pi server left as Adam's flagged restart
+(--enable-servo --enable-motors), bench listener on its 1 h life.
+
+## 2026-10-29 — SLAMM deferred until after the hackathon
+
+Adam's decision: SLAMM is not necessary for the demo and is parked
+until after the hackathon. Demo priorities remain the fast loop,
+blind-exit handling and rehearsals. Post-hackathon starting point if
+revisited: record a calibrated, head-locked dataset first, then try
+offline monocular SLAM before buying an IMU.
+
+## 2026-10-29 — Hold-to-talk long-press fix (page only, live on Pi)
+
+Adam (flags workaround working; "investigate the shoe" transcribed
+live): holding the mic button opened Android Chrome's image menu
+after ~1 s, stealing the touch and ending the listen. Page fix:
+contextmenu suppressed on the mic button and camera image, image
+made non-draggable with touch-callout/selection off, mic button
+captures its pointer and handles pointercancel. Deployed
+`index.html` only — served immediately, no restart. Phone 34 green.
+Follow-up same hour: releasing with no final transcript left the
+status stuck on "Listening…" — recognition/stream stop paths now
+settle to Transcribing… → Heard / Nothing heard on every exit.
+Root cause of the stuck screen found live: the Pi's 00:52 server
+crashed only on `/api/speech/transcript` (empty reply; `/api/text`
+fine), so phone transcripts never got an answer. With Adam's go,
+restarted it SAFE (pid 16259, no enable flags, `setsid` detached):
+transcript → goto shoe 200, drive/servo gates 403, page now sends
+`Cache-Control: no-store`. Speech preview is live from the phone;
+nothing can move until a flagged restart at home.
+
+## 2026-10-29 — WHISPER GO-AHEAD: streaming relay + HTTPS mic built (deploy is Adam's)
+
+Adam will pay for Baseten Whisper separately (~$0.06/GPU-min quoted —
+outside the Muse credits; deploy for demo windows, deactivate after).
+His phone also hit "mic error - not allowed": Chrome refuses mic +
+SpeechRecognition on plain `http://tank.local:8123` (insecure
+origin). Page now explains that in-place; workarounds are the Chrome
+insecure-origin flag (quick) or HTTPS (proper).
+
+Built: `BasetenStreamConnection` (stateful open/send/poll/end over the
+existing stdlib WS client, now with server-role `accept_websocket`),
+`GET /api/speech/stream` relay in the phone server (browser PCM in →
+Baseten; partials → `speech_partial`, finals → routed preview at
+`GET /api/speech/latest`; no path to hardware), and `--tls-cert/--tls-key`
+on the server so a Tailscale cert (`<tank>.<tailnet>.ts.net`)
+makes the page a secure origin. Page: when the server reports wired,
+Hold-to-talk streams PCM live and polls partials/finals; browser
+recognition and WAV upload remain fallbacks. Verified: speech 28,
+phone 34, parser 41, vision 53 green; TLS probe with a throwaway
+self-signed cert serves HTTPS; stream relay tested against fakes.
+Deployed to Pi, running server NOT restarted. Adam's steps: deploy
+Whisper Streaming in Baseten, set `BASETEN_STT_MODEL_ID`, restart the
+Pi server with the env + tailscale cert + chosen enable flags.
+
+## 2026-10-29 — CREDIT CORRECTION: $100 is Muse-Spark-only; STT = phone browser
+
+Adam clarified the $100 Baseten credits are tied to Muse Spark Open.
+Verified on the account from the Pi: the working model is literally
+"[HACKATHON] Muse Spark Open" (`meta-models/muse-spark-open-1026`),
+Model-API token pricing, inputs text+image ONLY (no audio). Whisper
+(OpenAI weights) therefore cannot spend those credits: Baseten STT
+needs a dedicated GPU deployment billed per-second to account
+balance. The earlier "deploy Whisper" instruction in the entry below
+is superseded. Muse Spark itself stays as the parser-fallback
+translator — that IS the credited model used as intended.
+
+Adam chose phone-browser speech: the page's Hold-to-talk now uses
+`SpeechRecognition` first (Chrome/Android), finals POST to the
+existing `/api/speech/transcript` preview; the Baseten WS audio path
+remains as fallback for browsers without recognition. New
+`index.html` deployed to the Pi and confirmed served by Adam's
+RUNNING server (page reads disk per request — no restart, no flag
+changes, no hardware touched). Suites still green (phone 32).
+
+## 2026-10-29 — PHONE SPEECH WIRED (Baseten STT seam + Muse Spark fallback; no hardware)
+
+Adam at work; speech-only testing authorised, servos/motors untouched.
+Baseten key added to `.env` (`BASETEN_API_KEY`, never printed/committed).
+Probed the account FROM THE PI (sandbox broker blocks baseten.co; key
+passed over ssh stdin, persisted nowhere): 21 Model-API models, NO
+deployments, no STT among Model APIs — live transcription still needs
+Adam to Deploy Streaming (Whisper Large V3) and set
+`BASETEN_STT_MODEL_ID`. Per Adam, the key's working LLM is
+`meta-models/muse-spark-open-1026` (verified present + answering).
+
+Wired: `tank_speech/ws_client.py` (minimal stdlib RFC6455 client — the
+Pi stack is stdlib-only), `BasetenStreamTranscriber` (WAV→PCM, binary
+frames in, JSON finals out, `{"type":"end"}` finish; Qwen3-ASR's
+different protocol would adapt this one class), `make_llm_fn()` chat-
+completions translator (default = Muse Spark; reasoning model, so
+max_tokens 800 — 300 measured flaky: 291 tokens of reasoning, content
+sometimes empty). Session worker routes parser-first; LLM may only
+rescue an unknown into a re-classified goto. Phone: server builds the
+session at startup when configured, `POST /api/speech/audio` (raw WAV
+≤2 MB → worker → routed preview; 503/415/413/504 honest errors), page
+gains Hold-to-talk (AudioContext PCM→16 kHz WAV; browsers gate the mic
+to HTTPS/localhost, page says so on LAN HTTP). `/api/text` now returns
+`target` (Showcase goto line no longer prints "undefined").
+
+Parser synonyms (speech-friendly goto verbs, all no-motion):
+investigate / check out / examine / inspect / look at / take a look at /
+have a look at / go look at / go investigate…. Bare check/look
+deliberately excluded ("check the sensors" stays query; "look at the
+left" stays ambiguous; negated/pronoun forms still refuse/unknown).
+
+Verified: parser 41, speech 27, phone 32, vision 53 — all green
+(red-first). Local E2E with a fake Baseten WS server: real phone server
+reports SPEECH LIVE, WAV POST → goto shoe, 3200 PCM bytes heard, zero
+commands. LIVE from the Pi: Muse Spark fallback turned "bring me the
+shoe please" into goto shoe (no commands) and left "sing me a song"
+unrouted. Code deployed to Pi (server.py/index.html/parser/speech);
+Adam's running server NOT restarted — at home: set the STT env, restart
+with chosen flags, hold-to-talk. No servo/motor write at any point.
+
+## 2026-10-29 — Ultrasonic retest still silent; fast loop (Speedup 2) built offline
+
+Ultrasonic (Adam re-seated it, then left for work; sensor reads only):
+two runs over `tank-lan` (`ssh tank` demands an interactive Tailscale
+check) — median-of-7 and a 3-ping corroboration on TRIG BCM4 /
+ECHO BCM17 both all-timeout, `distance_cm: None`. ECHO idles 0 as an
+input; pin 4 idles 1 as an input (inconclusive). Still a physical job:
+seating, VCC/GND, lead orientation. Phone server still running on the
+Pi with `--enable-servo --enable-motors` (pid 9616) — noted, untouched.
+
+Fast loop built offline, NOT yet run live (needs Adam present):
+`tank_vision/fast_track.py` — Meta lock-on box → MobileSAM box-track
+(prev box + 30% margin), Meta recheck only on empty mask / >2x area
+change / >0.30 box jump; `blind_action` table (under-camera creep,
+side-exit spin, true-loss stop, one blind move per loss). Wired as
+`drive_run --fast` (default path unchanged); `recenter_servo` split
+out of `recalibrate_camera` so the fast re-look stays local; forward
+step now shrinks harder above area 0.08 (x0.75). Verified: vision 53
+(15 new fast-track + 1 step test), parser 39, `--help` clean. Real
+MobileSAM smoke on mc.jpg via `/tmp/fast_smoke.py`: load+track 2.57 s,
+steady re-track 1.39 s, no recheck flagged. Next live step: `--fast`
+drive with Adam present; persistent grab/listener still open.
+
+## 2026-10-29 — Round table with preserved Muse contributor isolation
+
+Added `round_table.py` in the existing singular `multimodal-teleoperation`
+workspace. Adam chairs fresh Claude/Codex adviser turns and isolated Muse;
+`/keys muse` enables implementation, `/take` returns to discussion. Muse
+uses only the existing host isolation supervisor, with no contributor-mode,
+network policy, credential, profile, or launcher changes and no unrestricted
+fallback. Default Muse discussion disables shell and filesystem writes.
+Physical tests still need separate explicit authorization with Adam present.
+
+To avoid carrying host-agent context into the contributor session, adviser
+answers require an explicit `/share ID` before inclusion in Muse prompts.
+Direct Muse prompts and Muse replies remain in its room context. No existing
+sessions are resumed, no transcript is written by the controller, and no
+automatic agent-to-agent turns run. CLI-owned logs may still persist. Claude
+is tool-free in safe/restricted mode; Codex is ephemeral/read-only with user
+config ignored. These host adviser restrictions are not an OS isolation
+guarantee. README documents usage and the content-sharing boundary.
+
+Verification: 6 new offline adapter tests passed (context filtering, share
+validation, command boundary, fail-closed behavior, subprocess failure and
+timeout); required tank_tools suite passed 39 tests; the existing broker's
+3 policy tests passed. CLI help and scoped diff whitespace checks passed. Existing isolated Muse
+`exec --help` and an echo-provider smoke prompt succeeded through its broker;
+no hosted model call or physical actuation was performed. Live hosted-agent
+authentication and end-to-end model conversation remain unverified. Full
+`git diff --check` reported a pre-existing trailing blank line in the user's
+modified `tank_phone/index.html`; unrelated edits were preserved.
+
+## 2026-10-29 — FULL MISSION: scan → recalibrating drive → ARRIVED at Croc
+
+Adam reset the tank with the Croc slightly out of frame right (head
+not re-homed; shoe pile further left flagged as a lock-on risk —
+start frame confirmed no false "sandal" lock). drive_run: wide scan
+found it at stop 2 (pan 60, dx +0.32, area 0.029), then the NEW loop
+ran as designed — every motor decision preceded by a camera
+recalibration + re-look, damped spins (0.18 / 0.09 / 0.12 s, no
+ping-pong), forward steps shrinking with area (1.50 → 0.87 → 0.51 s).
+7 steps, 91 s, area 0.029 → 0.293 → ARRIVED (>0.25), final stop
+sent. Arrival frame visually verified from here: the grey Croc,
+heel strap up, fills the lower frame — the right target, not the
+pile. Recalibration pan repeatedly saturated at ch6=75 (target sits
+beyond the neck's centre) and the loop still converged: neck when it
+can, body when it must. This is the complete demo chain working:
+scan (out-of-frame) → lock → track/drive → arrived.
+
+## 2026-10-29 — SCAN FOUND IT, DRIVE SPIN-LOOPED, recalibration fix built
+
+Live (Adam present/authorised): wide scan WORKED first try — found
+the Croc at the 4th stop (pan 75, dx −0.37, area 0.025) after 3 empty
+looks. Head-centreing then oscillated (target off-axis at the pan
+limit — that's body-spin territory, as designed). Listener revived,
+drive_run 8 steps: SPIN PING-PONG — dx flipped −0.37→+0.26→−0.26
+for all 8 steps at the 0.15 s spin floor, never drove forward, final
+stop sent, 54 s. Adam's diagnosis on the spot: "it's gotta
+recalibrate the camera after the move or it'll just loop forever."
+
+Fix (offline, built same night): `camera_recenter_angles` (pure;
+physical mapping view-right=ch6-down / view-up=ch5-up) +
+`recalibrate_camera` in centre_run — after every move, one bounded
+recalibration from the FRESH aim, then a re-look; saturated neck
+returns the old aim and the body spins. `spin_secs_for_dx` damps on
+overshoot (sign flip ⇒ next spin ≤ half the last), killing the
+ping-pong sequence in tests. drive_run recalibrates before every
+motor decision. Vision 37 (8 new), parser 39 green. NOT yet re-run
+live — retry waits for Adam's word (listener revived 03:32, ~1 h).
+
+## 2026-10-29 — WIDE SCAN for out-of-frame targets (offline, not yet live)
+
+Adam's spec: broader than the mini centreing moves; if it isn't found
+across the L/R range, it fails. Built in `tank_vision/centre.py`
+(pure, tested): `scan_pan_positions` covers the full pan-servo range
+(ch6 limits, 75° here — the servo's actual L/R, not an assumed 180)
+in two legs (current → nearest end → far end), stops every 30°
+(half the 60° FOV, no gaps); `scan_tilts` adds a floor row 30° below
+current. `run_scan` recognises per stop; found leaves the head on the
+target, failure (or a refused move) restores the origin pose and
+returns None — fail closed, caller must not drive. Wired:
+`centre_run --scan`, and `drive_run` scans only on a first-frame loss
+(never-seen), never after tracking (that's the under-camera case).
+Tests: vision 29 (6 new scan tests, red-first; success-does-not-
+restore caught by test), parser 39, speech 20 — all green. NOT yet run
+live: first physical test is servo-only scan with Adam present.
+
+## 2026-10-29 — FAST SHOE RUN: nose at the Croc in 39 s + MobileSAM bench
+
+Baseline (Adam present, authorised): phone page had to close first
+(its MJPEG producer held the camera — grab failed, safe stop, zero
+steps). Croc end-on read as a black lump: SAM "shoe"/"croc"/"sandal"
+all [] until re-angled side-on, then only "one shoe"/"sandal" hit it
+(box 0.433–0.630, dx +0.03). Prompt chosen: "sandal". Run: 5 steps in
+39 s (~7.8 s/step, adaptive steps), area 0.016→0.127 peak, spin
+correction at step 3 worked, final stop sent. Final aim=None — the
+Croc slid under the camera (dy −0.36) before area hit 0.25; Adam
+confirmed the tank went right up to it. KNOWN GAP (Adam: "recalibrate
+a whole table to compensate for slam when it can't see shit"): blind
+behaviour needs an exit-mode table — under-camera (area up, dy
+dropping) should creep/stop, side-exit should spin-reacquire, true
+loss stays full stop; step formula should shrink harder above ~0.08.
+
+MobileSAM test (Adam's call, offline on tonight's frames): persistent
+VisionPipeline, Meta box as lock-on prompt — load+first mask 1.82 s,
+then 0.59 s/frame desktop CPU. Aim agreement vs Meta SAM (dx 0.038 vs
+0.031, area 0.0174 vs 0.0164). So speedup 2 stands: Meta lock-on once,
+MobileSAM box-track (prev bbox + margin as next prompt) per step,
+Meta re-check on mask loss/area jump. Expected step pause ~2–3 s vs
+7.8 s. Drive test of that loop is tomorrow's job, not tonight's.
+
+## 2026-10-29 — GUI LIVE TEST 2: camera live-then-dead = USB cable again
+
+Adam: feed live then dead; one anomalous camera move, unreplicated.
+Read-only Pi check: kernel shows USB disconnect/reconnect cycling
+(devices 16→19, repeated -71 UVC probe failures) ~00:53 — the known
+marginal camera cable/connector, not the page. Feed healthy when
+re-checked (10.5 MB in 5 s via /api/frame). Page fix deployed
+(index.html only, no restart): tapping the feed in Manual respawns
+the stream, and an img error auto-reloads it after 1.5 s — previously
+a mid-stream drop left the phone holding a dead last frame forever.
+Anomalous move: no server-side write on page load exists (proven);
+candidates are a stuck camera-stick pointer (interval keeps stepping
+to the limit) or the documented cable-weight pan/tilt jerk. Left
+unreplicated — needs Adam's direction/duration if it recurs.
+
+## 2026-10-29 — GUI LIVE TEST 1: camera axes reversed, motors silent (fixed)
+
+Adam's first flagged run (--enable-servo --enable-motors): layout
+"super solid first iteration"; incremental camera steps praised.
+Two bugs: (1) both camera stick axes reversed vs the physical head —
+fixed in `/api/camera` (stick right = ch6 down, stick up = ch5 up),
+with a new direction-asserting test; phone suite 29 green, deployed.
+(2) Motors never fired: diagnosed read-only — his server was up but
+NOTHING listened on :5098 (bench listener's 1 h lifetime had expired;
+token file still present). The page also hid the 503 in Manual mode;
+drive/camera errors now show under the STOP button, and the server
+error names the missing listener. Restart of his server + listener
+revival is Adam's step at his terminal (commands in chat); no motor
+or servo write was made from here.
+
+## 2026-10-28 — PHONE GUI v2: manual thumbsticks + arm picture + showcase
+
+Rebuilt `tank_phone/index.html` phone-first, full-screen camera.
+Manual mode: DRIVE and CAMERA thumbsticks, big STOP, max-speed cap
+slider (5–40%), Arm button, Centre cam. Showcase mode: big plain-
+English status, typed instructions + example chips (parser preview
+only — vision loop not started from the page), Speech toggle reading
+the Baseten hooks status, telemetry grid (gates, motor cap, speech,
+servo pose, ultrasonic honestly "unavailable", page reply ms).
+Stock XiaoR check: `xiaor/` holds only the vendor .so/about/JPEG trio
+— no reusable GUI exists, so the arm is our own draggable SVG
+(schematic, commanded-not-measured): drag elbow→ch2, rotation
+handle→ch3, claw→ch4, base slider→ch1, through the existing gated
+`/api/servo`. Old engineering drawer kept intact (sliders/limits/flags).
+
+Server (`tank_phone/server.py`): new `stick_to_move()` (deadzone,
+spin-dominant, steering trim, garbage→stop), `POST /api/drive`
+(stop always accepted; moves need `--enable-motors`; duty clamped by
+page cap + `--motor-cap` + 40% hard cap; 0.5 s moves re-sent while
+held so a dead client stops the tank), `POST /api/camera` (pan/tilt
+steps via `--enable-servo` path), `GET /api/telemetry`.
+`BenchMotorClient` holds one listener connection; token read from
+Pi-local `/tmp/claude-1000/bench_token`, never sent to the phone.
+
+Tests red-first: phone 27 (13 new), parser 39, speech 20, vision 23
+(1 skip), JS syntax + id check clean. Deployed server.py/index.html +
+tank_speech/ to the Pi and restarted the phone server in SAFE mode
+(no --enable-servo/--enable-motors) for Adam's at-home review:
+page 200 (30,737 B), telemetry gates both off, drive 403, speech
+status OK, camera frame 200. NO hardware was moved. To go live at
+home: revive the bench listener, restart the server with both
+--enable flags (see tank_phone/README.md).
+
+## 2026-10-28 — BASETEN SPEECH HOOKS OPENED (not wired, no hardware)
+
+New `tank_speech/` package (stdlib only): `baseten_client.py`
+(env-only `SpeechConfig` with redacted status, model/chain websocket
+URL builders, tolerant transcript-event parser that fails closed on
+garbage) + `session.py` (background `SpeechSession` worker, bounded
+`SpeechInbox`). Design goal is minimal execution downtime: the drive
+loop only calls `tick()` (timeout=0 poll for a routed final) and keeps
+driving while transcription/warmup run on the worker; stop/estop
+finals jump the inbox; partials never route; worker/warmup errors land
+in `status()["last_error"]` and kill nothing. Routing is the existing
+fixed-phrase `classify()` ONLY — routed dicts are previews, nothing
+calls `run()`/bench/servos. `llm_fallback_route()` hook lets a future
+Baseten LLM propose a sentence that must re-classify as goto-only.
+Phone hooks opened: `GET /api/speech/status` + `POST
+/api/speech/transcript` (classify-only, `wired: false`) in
+`tank_phone/server.py`. Live path still needs Adam: deploy streaming
+STT on Baseten, set `BASETEN_API_KEY`/`BASETEN_STT_MODEL_ID` (only
+`MODEL_API_KEY` exists locally today; no Baseten call attempted, $100
+pool unspent), then wire the one `transcribe_fn` websocket seam.
+Tests: speech 20, phone 14, parser 39, vision 23 (1 skip) — all green,
+no hardware touched.
+
+## 2026-10-28 — CREDITS: $100 Baseten approved, $100 Modal banked
+
+Adam approved for $100 Baseten credits (new, unspent). Baseten is for
+side-path jobs only — demo inference stays on Meta models: candidates
+are voice transcription, a small LLM translator for the parser
+fallback, or hosting the YOLO/MobileSAM fallback. Modal also holds
+$100 in credits (approved 2026-10-27, see below), banked for finals
+per Adam; Meta credits spend first. Neither balance is to be spent
+without Adam picking the job first.
+
+## 2026-10-28 — ADAPTIVE STEP LENGTH (speedup 1 of 3; software only)
+
+drive_run forward steps now scale with target area instead of a fixed
+0.5 s: step = clamp(0.25/sqrt(area), 0.5 s, 1.5 s), so far targets get
+longer steps (fewer ~7 s SAM cycles per metre; spin-up cost amortised)
+and near targets keep the short safe step. --step-secs still fixes a
+length when given. On this morning's areas: 0.068 -> 0.96 s,
+0.147 -> 0.65 s, 0.24 -> 0.51 s. Garbage area -> shortest step.
+step_secs_for_area() is a pure function (kept reusable for the local
+tracker in speedup 2/3). Tests red-first: vision 23 (4 new), parser
+39, all green, no hardware touched. Queued: (2) SAM lock-on + cheap
+local tracking between identity checks, (3) track-and-steer while
+moving over one persistent listener connection. TONIGHT, physical,
+in order: ultrasonic physical check first (sensor silent since cable
+reroute — see 2026-10-27 handoff), then tonight's drive tests;
+adaptive steps make the ultrasonic stop more important, not less.
+
+## 2026-10-28 — GOTO SLICE: 'go get the shoe' now routes to the vision loop
+
+Software only (physical testing paused until tonight). Parser
+(xiaor_text_action.py): "go to/get/find/fetch the <target>" classifies
+as kind="goto", target extracted, commands ALWAYS empty — the parser
+never moves for a goto; run() sends nothing and the transcript carries
+the target. Safety ordering preserved: negation refuses, stop/estop
+win, goto+any other action is ambiguous, extra clauses ("...for 3
+seconds", "...then wave") are ambiguous, empty/pronoun targets
+("fetch it") are unknown. Contract change: "go to the kitchen" moved
+from unknown to goto(kitchen) — still no motion from the parser.
+drive_run.py gains --text: resolve_prompt() routes a clean goto to
+the SAM prompt and exits 2 with no motion for anything else. Latency:
+classify() is ~0.05 ms/call locally, so the template fast-path adds
+nothing; an LLM front-end later would run once per command against
+~7 s/step vision cycles (measured this morning), and stop never goes
+through it. Tests: parser 39 (3 new goto tests, red-first), vision 19
+(new test_drive_run.py router tests). Adversarial probes all fail
+closed; "bring me the shoe" stays unknown — LLM-fallback territory,
+not templated. Try tonight: drive_run --text "go get the shoe".
+
+## 2026-10-28 — 'GO GET THE SHOE' KID DEMO: arrived again, camera cable flaky
+
+Morning demo for family, authorised in two scopes (5 steps, then
++3). Preflight found two blockers: bench listener :5098 had expired
+(1 h lifetime) and the USB camera was gone (kernel: disconnect, no
+/dev/video0, earlier -71 probe failures). Adam reseated the cable;
+first replug half-enumerated (device 9, vanished), second held
+(device 10, /dev/video0 back) but dropped/reconnected once more
+(device 11) during centreing — cable/connector is marginal, strain
+relief needed. SAM 'shoe' found it at the left frame edge (dx -0.46,
+area 0.013). centre_run hit its 6-step cap at pan limit ch6=74 with
+dx -0.32 (shoe left of body heading — head alone cannot centre it),
+so drive_run's body-spin correction did the rest. Listener revived
+with the existing Pi-only token (stop verified before motion).
+Run 1 (5 steps): spinl 0.17s, go, go, spinl 0.15s, spinr 0.15s —
+area 0.068->0.147, final stop ok. Run 2 (+3 steps, re-authorised):
+go, spinl 0.15s, go — final aim area 0.307 > 0.25 ARRIVED, stop
+confirmed twice, arrival frame shows the shoe filling the lower
+frame with no contact push. Suites unchanged: parser 36, vision 17.
+Listener self-expires ~09:19 (1 h from revival); tank left stopped
+at the shoe, head ch5=41/ch6=74. Note: the typed phrase
+"go to the shoe" still parses as unknown in xiaor_text_action.py —
+this demo used drive_run --prompt shoe directly; text->vision glue
+is still to build.
+
 ## 2026-10-27 — 'GO GET THE SHOE' COMPLETE: drove to target under vision
 
 Full chain live: camera -> SAM 3.1 'shoe' -> centre (tilt search found

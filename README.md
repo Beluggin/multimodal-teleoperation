@@ -27,7 +27,9 @@ is outside the repo. Physical movement still requires Adam's authorization.
 SSH exposes whatever that account can read on the Pi; do not place unrelated
 private material there. Direct desktop services and other network targets
 are unavailable. Other permitted destinations are Meta API/login HTTPS and
-Modal's HTTPS services plus three verified Modal storage/CDN hosts.
+Modal's HTTPS services plus three verified Modal storage/CDN hosts, and
+Baseten's API/docs/inference and model/chain deployment HTTPS endpoints.
+See [Baseten MCP access](BASETEN_ACCESS.md) for configuration and checks.
 Missing access fails closed; there is no automatic unrestricted retry.
 
 ## Modal access (2026-10-27)
@@ -57,6 +59,41 @@ read on the tank, pasted into Muse, or sent in an API request can reach Meta.
 This boundary does not reverse earlier uploads or certify future paid terms.
 
 ## Local controls and checks
+
+### Agent round table
+
+From a host terminal, run `python3 ~/multimodal-teleoperation/round_table.py`.
+Claude and Codex advise; Muse can implement inside its existing tank-only
+isolation. The directory name is singular. Example:
+
+```text
+@all Suggest a bounded fix for target loss in tank_vision/drive_run.py
+/share 2
+@muse Review the shared advice against the current implementation
+/keys muse
+@muse Implement the agreed fix and run offline tests; no physical tests
+/take
+```
+
+Use the actual displayed adviser answer ID with `/share`. Only selected
+answers, direct `@muse` prompts, and Muse's own replies enter Muse's room
+context. Adviser questions and unshared answers are withheld. Review an
+answer for unrelated/private material before sharing it. `@all` addresses
+the two advisers; `/help` lists commands. No automatic agent handoffs occur.
+
+The controller never resumes existing conversations or saves a transcript;
+each CLI may retain its own logs. Claude runs with tools disabled and safe
+mode; Codex uses fresh ephemeral read-only sessions with user config ignored.
+These adviser settings are not Muse's OS isolation. Muse always uses the
+existing host supervisor with its pinned workspace, private profile, broker,
+and contributor settings unchanged; missing isolation fails closed. Default
+Muse discussion disables shell and filesystem writes; `/keys muse` restores
+its normal tool approvals. No permission to move hardware follows from keys.
+Already-shared content cannot be recalled; quit for a fresh room.
+
+Offline adapter checks: `python3 -m unittest test_round_table`.
+Live model compatibility/authentication must be checked at first use; the
+offline suite does not exercise hosted providers.
 
 Run the keyboard driver from a regular desktop terminal (outside Muse):
 
