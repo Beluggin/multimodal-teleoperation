@@ -2,6 +2,52 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — LIVE TESTS: FastSAM fails, scan/different/moved pass (Adam present)
+
+Git first: the single Day-2 commit became 6 temporal local commits
+(parser → phone GUI → speech → vision → round table → docs, dated
+2026-10-28…30 from this log; file-level grouping, some files span
+days). No remote configured; nothing pushed. Offline suites green
+before testing: parser 41, vision 59, phone 38, speech 28.
+
+Prep: bench listener revived on Pi (pid 29544, 1 h life), stop
+verified `ok`; phone page closed to free /dev/video0. Cat in the
+room interfered twice (Adam: "Aw crap. cat?") — noted per run.
+
+- FastSAM (`drive_run --fast`, sandal/Croc): FAIL, twice. Run A
+  (Croc in frame, pile visible): lock-on perfect (dx −0.001,
+  area 0.021), then after one 1.5 s forward step dx jumped −0.28,
+  spins chased the shoe pile, blind side-exit spin, ARRIVED at
+  area 0.27 on the WRONG instance — arrival frame is the door/pile,
+  not the Croc; 38 s total, no speedup over the 7.8 s/step baseline
+  (Meta rechecks + recalibrations dominate). Adam: "it was
+  terrible. It started so well, too." Run B (Croc isolated at
+  frame edge): spin corrected, area jumped 0.031→0.126 on
+  recalibration, target lost at step 3, safe stop (29 s). Fast
+  motor loop remains UNPROVEN; do not demo `--fast` as-is.
+- Out-of-frame scan (servo-only `centre_run --scan`, sandal):
+  PASS for finding — 2 empty looks then FOUND at stop 3
+  (area 0.019); post-scan frame verifies the correct grey Croc.
+  Head centreing after the find then lost it at step 2 (same
+  centreing fragility as the fast loop, not a scan failure).
+- Different objects (black mug, `centre_run --prompt mug`):
+  PASS — recognised and CENTRED in 5 steps (dx +0.019,
+  dy −0.008); frame verified mug dead-centre.
+- Moved objects (same mug): first move was outside the head's
+  0–75° pan arc — scan swept 8 looks/2 tilts, not found, head
+  restored, no motion: fail-closed CORRECT. Re-placed inside
+  the arc (out of frame right): scan FOUND at stop 3,
+  CENTRED at step 6 (dx +0.013); frame verified.
+- Adam's observation, load-bearing: camera pan is asymmetric
+  vs chassis-straight — far more range to one side than the
+  other. Likely contributor to repeated pan-75 saturation in
+  recalibration. Next fix candidates (offline first): cap the
+  first forward step after lock-on, verify tracked instance
+  against the lock box before ARRIVED, and map pan centre to
+  chassis heading before demo rehearsal.
+
+Tank left stopped (final stop `ok` sent after last frame).
+
 ## 2026-10-30 — Isolated Muse: Baseten deployment MCP enabled
 
 At Adam's request, added narrow Baseten HTTPS API/docs/inference and model/
