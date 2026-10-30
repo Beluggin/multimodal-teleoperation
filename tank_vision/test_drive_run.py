@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tank_vision.drive_run import (  # noqa: E402
-    resolve_prompt, spin_secs_for_dx, step_secs_for_area,
+    chassis_scan, resolve_prompt, spin_secs_for_dx, step_secs_for_area,
 )
 import tank_vision.drive_run as drive_run  # noqa: E402
 
@@ -63,6 +63,42 @@ class AdaptiveStep(unittest.TestCase):
             with self.subTest(area=area):
                 self.assertEqual(step_secs_for_area(area),
                                  drive_run.STEP_MIN_SECS)
+
+
+class ChassisScan(unittest.TestCase):
+    def test_turns_toward_long_side_and_rescans_until_found(self):
+        scans, drives = [], []
+
+        def scan(prompt):
+            scans.append(prompt)
+            return {"dx_right": 0.1} if len(scans) == 3 else None
+
+        aim = chassis_scan("mug", scan_fn=scan,
+                           drive_fn=drives.append, max_turns=3)
+        self.assertEqual(aim, {"dx_right": 0.1})
+        self.assertEqual(scans, ["mug"] * 3)
+        # ~40 deg at the measured 110 deg/s spin rate, to the right.
+        self.assertEqual(drives, ["spinr 0.36 30", "spinr 0.36 30"])
+
+    def test_failed_spin_aborts_search(self):
+        scans = []
+
+        def scan(prompt):
+            scans.append(prompt)
+            return None
+
+        def bad_drive(cmd):
+            raise RuntimeError("listener down")
+
+        self.assertIsNone(chassis_scan("mug", scan_fn=scan,
+                                       drive_fn=bad_drive, max_turns=3))
+        self.assertEqual(scans, ["mug"])
+
+    def test_spin_direction_is_configurable(self):
+        drives = []
+        chassis_scan("mug", scan_fn=lambda p: None,
+                     drive_fn=drives.append, max_turns=1, spin="spinl")
+        self.assertEqual(drives, ["spinl 0.36 30"])
 
 
 class DampedSpin(unittest.TestCase):

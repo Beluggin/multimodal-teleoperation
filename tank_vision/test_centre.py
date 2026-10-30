@@ -6,8 +6,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tank_vision.centre import (  # noqa: E402
-    camera_recenter_angles, centred, plan_step, run_scan,
-    scan_pan_positions, scan_tilts, sign_after_trial,
+    camera_recenter_angles, centred, plan_step, run_chassis_scan,
+    run_scan, scan_pan_positions, scan_tilts, sign_after_trial,
 )
 
 
@@ -77,6 +77,56 @@ class TestScan(unittest.TestCase):
         self.assertIsNone(aim)
         self.assertEqual(moves[-1], (74, 72))  # put the head back
         self.assertEqual(len(moves), 8 + 1)    # every stop, then restore
+
+    def test_chassis_scan_finds_on_second_leg_after_one_turn(self):
+        scans, spins = [], []
+
+        def scan():
+            scans.append(1)
+            return {"dx_right": 0.2} if len(scans) == 2 else None
+
+        def spin():
+            spins.append(1)
+            return True
+
+        aim = run_chassis_scan(scan, spin, max_turns=3)
+        self.assertEqual(aim, {"dx_right": 0.2})
+        self.assertEqual(len(scans), 2)
+        self.assertEqual(len(spins), 1)
+
+    def test_chassis_scan_first_leg_find_never_spins(self):
+        spins = []
+        aim = run_chassis_scan(lambda: {"dx_right": 0.0},
+                               lambda: spins.append(1) or True,
+                               max_turns=3)
+        self.assertEqual(aim, {"dx_right": 0.0})
+        self.assertEqual(spins, [])
+
+    def test_chassis_scan_never_found_stops_after_turn_cap(self):
+        scans, spins = [], []
+
+        def scan():
+            scans.append(1)
+            return None
+
+        def spin():
+            spins.append(1)
+            return True
+
+        self.assertIsNone(run_chassis_scan(scan, spin, max_turns=3))
+        self.assertEqual(len(scans), 4)   # initial leg + 3 re-scans
+        self.assertEqual(len(spins), 3)
+
+    def test_chassis_scan_refused_spin_aborts_without_rescan(self):
+        scans = []
+
+        def scan():
+            scans.append(1)
+            return None
+
+        self.assertIsNone(run_chassis_scan(scan, lambda: False,
+                                           max_turns=3))
+        self.assertEqual(len(scans), 1)
 
     def test_run_scan_move_refusal_aborts_and_restores(self):
         moves = []

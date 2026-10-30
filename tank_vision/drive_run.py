@@ -32,6 +32,7 @@ from tank_vision.centre_run import (  # noqa: E402
     grab, recognise_tracked, recalibrate_camera, recenter_servo,
     scan_for_target,
 )
+from tank_vision.centre import run_chassis_scan  # noqa: E402
 from tank_vision.fast_track import FastTracker, blind_action  # noqa: E402
 from tank_vision.pipeline import Box, VisionPipeline  # noqa: E402
 import xiaor_text_action as _xta  # noqa: E402
@@ -94,6 +95,36 @@ def step_secs_for_area(area_frac):
     return min(STEP_MAX_SECS, max(STEP_MIN_SECS, secs))
 
 
+SCAN_TURN_DEG = 40.0   # chassis turn between neck scans (step 1)
+
+
+def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
+                 spin="spinr", duty=30):
+    """Step 1: neck scan; on failure spin the chassis and rescan.
+
+    Defaults favour `spinr`: Adam's pan is asymmetric (~50 deg one
+    side of chassis-forward, ~30 the other), and the long side is
+    the productive search direction. Each turn is one bounded spin
+    (~40 deg at the measured spin rate); a failed spin aborts the
+    search. Returns an aim or None (fail closed, no drive).
+    """
+    scan_fn = scan_fn or scan_for_target
+    drive_fn = drive_fn or drive
+    secs = round(SCAN_TURN_DEG / SPIN_DEG_PER_SEC, 2)
+
+    def spin_once():
+        try:
+            print(f"chassis scan: {spin} {secs:.2f}s turn, rescan")
+            drive_fn(f"{spin} {secs:.2f} {duty}")
+            return True
+        except Exception as e:
+            print(f"chassis scan: spin failed ({e}) — aborting")
+            return False
+
+    return run_chassis_scan(lambda: scan_fn(prompt), spin_once,
+                            max_turns=max_turns)
+
+
 def fast_look(tracker, prompt, prev_centroid=None):
     """One fast-loop look: MobileSAM track; Meta SAM only on suspicion.
 
@@ -140,6 +171,13 @@ def main(argv=None):
                     help="Speedup 2: Meta lock-on once, MobileSAM "
                          "box-track per step, Meta recheck on loss; "
                          "blind-exit table on mid-drive loss")
+    ap.add_argument("--scan-turns", type=int, default=3,
+                    help="step 1: chassis turns between neck scans "
+                         "when the target starts out of frame")
+    ap.add_argument("--scan-spin", choices=("spinr", "spinl"),
+                    default="spinr",
+                    help="chassis-scan turn direction (default spinr: "
+                         "the camera's long side)")
     args = ap.parse_args(argv)
     if args.text:
         target, why = resolve_prompt(args.text)
@@ -177,8 +215,11 @@ def main(argv=None):
                 # up. (A loss AFTER tracking is the under-camera case —
                 # that stays a plain stop, handled by the blind table.)
                 scanned = True
-                print(f"step {step}: not in frame — wide scan")
-                aim = scan_for_target(args.prompt)
+                print(f"step {step}: not in frame — wide scan "
+                      f"(+ up to {args.scan_turns} chassis turns)")
+                aim = chassis_scan(args.prompt,
+                                   max_turns=args.scan_turns,
+                                   spin=args.scan_spin, duty=args.duty)
             if (aim is None and tracker is not None
                     and prev_aim is not None and not blind_used):
                 # Blind-exit table (fast loop): ONE creep or reacquire

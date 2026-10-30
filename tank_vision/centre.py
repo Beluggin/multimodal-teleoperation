@@ -143,3 +143,24 @@ def run_scan(pan_positions, tilt_rows, move_fn, recognise_fn, origin):
                 return aim   # head stays where it found the target
     restore()
     return None
+
+
+def run_chassis_scan(scan_fn, spin_fn, max_turns=3):
+    """Neck scan, then chassis-turn-and-rescan, capped. Aim or None.
+
+    The neck covers only its pan range (~80 deg, asymmetric about
+    chassis-forward on this tank); a target beyond it is invisible to
+    run_scan no matter how often it sweeps. Here a failed neck scan
+    earns ONE bounded chassis turn (spin_fn -> bool) and a fresh
+    scan, up to `max_turns` turns. A refused/failed spin aborts the
+    whole search (fail closed, no further scans); never-found after
+    the cap also returns None. The caller drives only on an aim.
+    """
+    aim = scan_fn()
+    turns = 0
+    while aim is None and turns < max_turns:
+        if not spin_fn():
+            return None
+        turns += 1
+        aim = scan_fn()
+    return aim
