@@ -144,10 +144,19 @@ class ChassisScan(unittest.TestCase):
                            drive_fn=drives.append, max_turns=3)
         self.assertEqual(aim, {"dx_right": 0.1})
         self.assertEqual(scans, ["mug"] * 3)
-        # Default favours LEFT: the neck has only 22 units of travel
-        # that side of PAN_FORWARD (Adam, 2026-10-30), so the chassis
-        # turns left to cover the handicapped side. ~60 deg at 110/s.
-        self.assertEqual(drives, ["spinl 0.55 30", "spinl 0.55 30"])
+        # First turn favours LEFT (the neck's handicapped side, Adam
+        # 2026-10-30); then Adam's sweep (2026-10-31): alternate sides,
+        # each turn bigger — left 60, then right 120 (60 past start).
+        self.assertEqual(drives, ["spinl 0.55 30", "spinr 1.09 30"])
+
+    def test_turns_alternate_and_grow(self):
+        # Chain 4: three LEFT turns hunted 180 deg away from the mug
+        # (it was right, past the neck) and found a cat instead.
+        drives = []
+        chassis_scan("mug", scan_fn=lambda p: None,
+                     drive_fn=drives.append, max_turns=3)
+        self.assertEqual(drives, ["spinl 0.55 30", "spinr 1.09 30",
+                                  "spinl 1.64 30"])
 
     def test_failed_spin_aborts_search(self):
         scans = []

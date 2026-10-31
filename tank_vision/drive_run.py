@@ -122,12 +122,22 @@ def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
     """
     scan_fn = scan_fn or scan_for_target
     drive_fn = drive_fn or drive
-    secs = round(SCAN_TURN_DEG / SPIN_DEG_PER_SEC, 2)
+    other = "spinr" if spin == "spinl" else "spinl"
+    turn = [0]
 
     def spin_once():
+        # Adam's sweep (2026-10-31): alternate sides, each turn one
+        # SCAN_TURN_DEG bigger — L60, R120 (60 past start), L180 — so
+        # three turns search BOTH sides. Always-left turned 180 deg
+        # away from a mug on the right and found a cat instead.
+        turn[0] += 1
+        k = turn[0]
+        direction = spin if k % 2 else other
+        secs = round(k * SCAN_TURN_DEG / SPIN_DEG_PER_SEC, 2)
         try:
-            print(f"chassis scan: {spin} {secs:.2f}s turn, rescan")
-            drive_fn(f"{spin} {secs:.2f} {duty}")
+            print(f"chassis scan: {direction} {secs:.2f}s turn "
+                  f"({k * SCAN_TURN_DEG:g} deg), rescan")
+            drive_fn(f"{direction} {secs:.2f} {duty}")
             return True
         except Exception as e:
             print(f"chassis scan: spin failed ({e}) — aborting")

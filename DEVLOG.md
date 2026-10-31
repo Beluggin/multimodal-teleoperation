@@ -35,6 +35,18 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-31 — Chassis turns alternate too (L60, R120, L180)
+
+Ground truth from chain 4 mission 2 (Adam): "It didn't go to the mug. It
+turned the opposite direction towards a cat." The mug was to the RIGHT,
+past the neck's ~61° right reach; chassis_scan turned spinl 60° three
+times (always left, the Oct 30 handicapped-side rule) — 180° the wrong
+way. Applying Adam's sweep at chassis level: turn k goes k × 60° on
+alternating sides, first left — L60, R120 (60° past start), L180 — so
+three turns search both sides. Spins up to 1.64 s (listener caps 3 s).
+Tests: the always-left expectation updated + 1 new; vision 100.
+NOT yet live-tested. Video note (Adam): frame it as "tank eats cats".
+
 ## 2026-10-31 — Chain 4: bottom-clip ARRIVED live; Adam's outward sweep
 
 Chain 4 ("go to the blue ball then go to the mug"), after 8381f20:
