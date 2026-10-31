@@ -2,6 +2,21 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Cat chase retest (phone) + way bigger steps
+
+Phone launch "go to the cat" (5 steps, new 33° FOV active):
+tracked the cat through steps 1–4 — area 0.100 → 0.131 → 0.103
+→ 0.173, spins none, forwards 0.59/0.52/0.58 s — then target
+lost at step 5, safe stop verified. The cat out-moved the
+stop-decide-move loop, but tracking held across 4 approaches.
+Adam's verdict on the steps: "~4in each time" — spin-up eats
+0.5 s steps at 30%. Fix (4d3156c): forward curve 0.25→0.40
+coefficient, cap 1.5→2.5 s (listener hard cap 3 s); the >0.08
+near-target x0.75 shrink stays, so arrival-area step is only
+0.6 s. At cat areas (~0.10) steps become ~0.95 s. Red-first
+tests; vision 68 + parser 41 green. Not yet live-tested —
+next cat chase is its test. Cat wins round 2; no arm attempted.
+
 ## 2026-10-30 — FOV measured with a helper's feet: 33° (was assumed 60°)
 
 Cat chase by phone ("go to the cat") declared ARRIVED at step 1
