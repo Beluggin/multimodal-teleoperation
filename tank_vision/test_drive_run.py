@@ -72,13 +72,19 @@ class AdaptiveStep(unittest.TestCase):
 class TandemMove(unittest.TestCase):
     def test_loss_after_tracking_gets_one_recovery(self):
         self.assertTrue(drive_run.should_tandem_recover(
-            tandem=True, has_prev=True, recovered=False))
+            tandem=True, has_prev=True, recovered=False, found=False))
         self.assertFalse(drive_run.should_tandem_recover(
-            tandem=True, has_prev=True, recovered=True))
+            tandem=True, has_prev=True, recovered=True, found=False))
         self.assertFalse(drive_run.should_tandem_recover(
-            tandem=False, has_prev=True, recovered=False))
+            tandem=False, has_prev=True, recovered=False, found=False))
         self.assertFalse(drive_run.should_tandem_recover(
-            tandem=True, has_prev=False, recovered=False))
+            tandem=True, has_prev=False, recovered=False, found=False))
+
+    def test_found_target_never_triggers_recovery(self):
+        # 2026-10-30: without this the scan ran after EVERY tracked
+        # step, threw away a good aim and logged a false "lost".
+        self.assertFalse(drive_run.should_tandem_recover(
+            tandem=True, has_prev=True, recovered=False, found=True))
 
     def test_servo_and_motor_both_run_for_one_picture(self):
         calls = []

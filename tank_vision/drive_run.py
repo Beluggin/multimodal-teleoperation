@@ -133,7 +133,7 @@ def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
                             max_turns=max_turns)
 
 
-def should_tandem_recover(tandem, has_prev, recovered):
+def should_tandem_recover(tandem, has_prev, recovered, found):
     """One verification recovery per tandem loss, never a loop.
 
     A loss after a close approach often means the target slid
@@ -141,9 +141,10 @@ def should_tandem_recover(tandem, has_prev, recovered):
     had physically reached the mug, 2026-10-30) — so a tandem
     loss earns ONE neck scan to verify/reacquire before the run
     is allowed to report failure. Non-tandem paths keep their
-    proven plain-stop behaviour.
+    proven plain-stop behaviour. A look that FOUND the target is
+    not a loss: recovering then threw away a good aim every step.
     """
-    return bool(tandem and has_prev and not recovered)
+    return bool(tandem and has_prev and not recovered and not found)
 
 
 def run_tandem(plan, motor_cmd, servo_fn=None, drive_fn=None):
@@ -324,7 +325,8 @@ def main(argv=None):
                     time.sleep(1.2)
                     continue
             if should_tandem_recover(args.tandem, prev is not None,
-                                     tandem_recovered):
+                                     tandem_recovered,
+                                     found=aim is not None):
                 # Verify before failing: the target may be under
                 # the camera at arrival, or just out of frame after
                 # the tandem spin. One neck scan, then re-judge.

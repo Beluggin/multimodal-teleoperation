@@ -35,6 +35,28 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-30 — Bug #1 SOLVED: tandem "lost" was a false alarm every step
+
+"go to The Mug" (0.85 calibration, IPv4 fix): wide scan found it at
+pan 15 (+45.7°), spins + forward steps, final look area 0.354 at the
+mug, stop ok, ~93 s. Adam: "THAT WAS SO GOOD". Every step 2–5 still
+logged "lost — verification scan", even at bearing +2.7°.
+
+Claude saved the frames of step 4's "lost" first look: the mug fills
+the lower right, and SAM re-run on both frames finds it (area 0.14,
+dx +0.30). The look never failed. should_tandem_recover(tandem,
+has_prev, recovered) never asked whether the look FOUND the target,
+and the call site didn't either, so after every tracked step it
+printed "lost", discarded the good aim and ran a neck scan;
+tandem_recovered then reset, so it repeated every step. Introduced
+with 556c1eb; its test covered only flag combinations.
+
+Fix: should_tandem_recover(..., found) is False when the look found
+the target; call site passes found=aim is not None. Red-first test.
+Suites: vision 84, parser 41, phone 38, speech 28. This also
+retires the earlier theories (stall, pan scale, settle time) as the
+cause of bug #1; they were real problems of their own but not this.
+
 ## 2026-10-30 — Pan measured: 0.85 deg/unit (was 1.2 / implied 1.0)
 
 Servo-only test, Adam authorised (motors untouched, tilt 36 held,
