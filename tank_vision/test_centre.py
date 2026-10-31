@@ -84,14 +84,31 @@ class TestCentre(unittest.TestCase):
 
 
 class TestScan(unittest.TestCase):
-    def test_pan_positions_cover_full_range_with_broad_steps(self):
-        pos = scan_pan_positions((0, 75), current=74)
-        self.assertEqual(pos[0], 75)
-        self.assertEqual(pos[-1], 0)
-        self.assertEqual(set(pos), {0, 15, 30, 45, 60, 75})
-        steps = [abs(b - a) for a, b in zip(pos, pos[1:])]
-        self.assertTrue(all(s <= 15 for s in steps))  # ~half the 33 deg FOV
-        self.assertTrue(all(s >= 10 for s in steps))  # broad, not mini moves
+    def covered(self, pos, current, lo=0, hi=75):
+        # Every pan in range must be inside some frame (current included).
+        from tank_vision.centre import FOV_H_DEG, SERVO_DEG_PER_UNIT
+        half = FOV_H_DEG / SERVO_DEG_PER_UNIT / 2
+        return all(any(abs(p - c) <= half for c in [current] + pos)
+                   for p in range(lo, hi + 1))
+
+    def test_sweep_alternates_outward_from_current(self):
+        # Adam 2026-10-31: one shot, then the other side slightly
+        # bigger, and so on — near the front is searched first.
+        pos = scan_pan_positions((0, 75), current=37)
+        offs = [p - 37 for p in pos]
+        self.assertGreater(offs[0], 0)            # view-left first
+        self.assertLess(offs[1], 0)               # then the other side
+        mags = [abs(o) for o in offs]
+        self.assertEqual(mags, sorted(mags))      # swings never shrink
+        self.assertNotIn(37, pos)                 # first look already done
+
+    def test_sweep_covers_full_range_in_few_stops(self):
+        for cur in (0, 10, 37, 53, 60, 75):
+            with self.subTest(current=cur):
+                pos = scan_pan_positions((0, 75), current=cur)
+                self.assertTrue(self.covered(pos, cur))
+                self.assertLessEqual(len(pos), 4)  # was 6 stops/row
+                self.assertTrue(all(0 <= p <= 75 for p in pos))
 
     def test_measured_fov_not_assumed(self):
         from tank_vision.centre import FOV_H_DEG, FOV_V_DEG
@@ -99,10 +116,17 @@ class TestScan(unittest.TestCase):
         self.assertAlmostEqual(FOV_H_DEG, 33.0, delta=2.0)
         self.assertAlmostEqual(FOV_V_DEG, 25.0, delta=2.0)
 
-    def test_pan_positions_start_toward_nearest_end_then_sweep_back(self):
-        pos = scan_pan_positions((0, 75), current=10)
-        self.assertEqual(pos[0], 15)   # nearest stop to current pan
-        self.assertEqual(pos[-1], 75)
+    def test_later_rows_also_look_at_the_starting_pan(self):
+        # The first look happened at (start pan, first tilt) only; the
+        # floor row must still look straight ahead at its own tilt.
+        moves = []
+
+        def move(pan, tilt):
+            moves.append((pan, tilt))
+            return True
+        run_scan([62, 12], [72, 42], move, lambda: None, origin=(37, 72))
+        self.assertIn((37, 42), moves)
+        self.assertNotIn((37, 72), moves[:-1])   # only the final restore
 
     def test_tilts_add_a_floor_row_below_current(self):
         self.assertEqual(scan_tilts((30, 120), current=72), [72, 42])
@@ -135,7 +159,8 @@ class TestScan(unittest.TestCase):
                        origin=(74, 72))
         self.assertIsNone(aim)
         self.assertEqual(moves[-1], (74, 72))  # put the head back
-        self.assertEqual(len(moves), 8 + 1)    # every stop, then restore
+        # every stop (+ the start pan on the floor row), then restore
+        self.assertEqual(len(moves), 4 + 5 + 1)
 
     def test_chassis_scan_finds_on_second_leg_after_one_turn(self):
         scans, spins = [], []

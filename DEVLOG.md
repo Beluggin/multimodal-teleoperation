@@ -35,6 +35,30 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-31 — Chain 4: bottom-clip ARRIVED live; Adam's outward sweep
+
+Chain 4 ("go to the blue ball then go to the mug"), after 8381f20:
+mission 1 seen at look 1, go 2.5 s ×2, lost (step 2 area had DROPPED
+0.016→0.011 — likely a farther blue thing), the ladder's wide scan found
+the ball at the first stop with y_bottom 1.0 → "ARRIVED (box on the
+frame bottom)" 30 s after launch, stop ok; mission 2 started 0.6 s later.
+Mission 2 (mug): 4 neck sweeps × 12 stops + 3 chassis turns (spinl
+0.55 s each — FIRST live chassis-assisted search) → not found, fail
+closed, stop ok, ~4.5 min. Mug placement unknown/out of view.
+
+Adam: "sweep is the correct method. One shot, then alternate to the
+other side slightly bigger, and so on." scan_pan_positions now sweeps
+outward from the current pan, alternating sides (view-left first),
+swings never shrinking; each side stops once its frame reaches the
+limit. Step 15 → 25 units: the frame is 33° ≈ 39 units at 0.85°/unit,
+so 15 looked at every spot ~2.5×. Full 0–75 row: 6 stops → 2–3
+(e.g. from 53: [75, 28, 3]). run_scan: later (floor) rows also look at
+the start pan, which the caller's first look covered only at the first
+tilt. Tests: 3 red-first (alternation, coverage ≤4 stops from any
+start, floor-row start pan); old ordering tests replaced; one count
+updated (4+5+1). Vision 99. NOT yet live-tested. Still open: 2-sample
+scan stops; neck tilt inherited between missions.
+
 ## 2026-10-31 — Bottom-clipped box = arrived (chain 3 pushed the ball)
 
 Chain 3 (loss ladder live): ball seen at look 1; go 2.5 s, go 2.26 s,

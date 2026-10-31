@@ -133,32 +133,41 @@ def tandem_plan(aim, pan_angle, tilt_angle, pan_limits=(0, 75),
 # pose and the caller must not drive. Servo travel here is the physical
 # pan range (ch6 limits, 75 deg on this tank), not an assumed 180.
 # ---------------------------------------------------------------------------
-SCAN_STEP_DEG = 15.0   # ~half the measured 33 deg FOV (servo units):
-                       # overlap, no gaps. Was 30 under the 60 deg
-                       # assumption — a full FOV per step, gap-prone.
+SCAN_STEP_DEG = 25.0   # servo units between sweep stops (~21 deg): the
+                       # frame is 33 deg = ~39 units at 0.85 deg/unit,
+                       # so stops overlap ~12 deg. 15 looked at every
+                       # spot ~2.5 times (2026-10-31).
 SCAN_TILT_DROP = 30    # second row looks this far toward the floor
 
 
 def scan_pan_positions(pan_limits, current, step=SCAN_STEP_DEG):
-    """Ordered pan stops covering [lo, hi], broad steps, two legs.
+    """Pan stops sweeping outward from `current`, alternating sides.
 
-    Starts toward the nearest end first, then sweeps back across the
-    full range. Both limits are always included; no stop is more than
-    `step` from the previous one.
+    Adam 2026-10-31: one shot (the look already taken at `current`),
+    then a step to one side, then the other side slightly bigger, and
+    so on — what is near the front is found first. View-left (ch6 up)
+    goes first. Each side stops once its last frame reaches the limit;
+    the limit itself is the last stop when a full step would pass it.
     """
     lo, hi = int(pan_limits[0]), int(pan_limits[1])
-    stops = set()
-    a = lo
-    while a < hi:
-        stops.add(a)
-        a += int(step)
-    stops.add(hi)
-    stops = sorted(stops)
-    # Nearest grid stop to current is where leg 1 heads first.
-    start = min(range(len(stops)), key=lambda i: abs(stops[i] - current))
-    if start <= len(stops) / 2:
-        return stops[start::-1] + stops[start + 1:]
-    return stops[start:] + list(reversed(stops[:start]))
+    cur = int(current)
+    half = FOV_H_DEG / SERVO_DEG_PER_UNIT / 2
+
+    def side(sign, limit):
+        stops, last, k = [], cur, 1
+        while abs(limit - last) > half:
+            nxt = cur + sign * k * int(step)
+            if (nxt - limit) * sign >= 0:
+                nxt = limit
+            stops.append(nxt)
+            last, k = nxt, k + 1
+        return stops
+
+    left, right = side(+1, hi), side(-1, lo)
+    out = []
+    for i in range(max(len(left), len(right))):
+        out += left[i:i + 1] + right[i:i + 1]
+    return out
 
 
 def scan_tilts(tilt_limits, current, drop=SCAN_TILT_DROP):
@@ -185,8 +194,13 @@ def run_scan(pan_positions, tilt_rows, move_fn, recognise_fn, origin):
         if origin is not None and last != origin:
             move_fn(origin[0], origin[1])
 
-    for tilt in tilt_rows:
-        for pan in pan_positions:
+    for row, tilt in enumerate(tilt_rows):
+        pans = list(pan_positions)
+        if row and origin is not None and origin[0] not in pans:
+            # The caller's first look covered the start pan at the
+            # FIRST tilt only; later rows look straight ahead too.
+            pans.insert(0, origin[0])
+        for pan in pans:
             if (pan, tilt) == last:
                 continue
             if not move_fn(pan, tilt):
