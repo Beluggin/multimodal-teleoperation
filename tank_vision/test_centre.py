@@ -43,14 +43,20 @@ class TestScan(unittest.TestCase):
         pos = scan_pan_positions((0, 75), current=74)
         self.assertEqual(pos[0], 75)
         self.assertEqual(pos[-1], 0)
-        self.assertEqual(set(pos), {0, 30, 60, 75})
+        self.assertEqual(set(pos), {0, 15, 30, 45, 60, 75})
         steps = [abs(b - a) for a, b in zip(pos, pos[1:])]
-        self.assertTrue(all(s <= 30 for s in steps))
-        self.assertTrue(all(s >= 15 for s in steps))  # broad, not mini moves
+        self.assertTrue(all(s <= 15 for s in steps))  # ~half the 33 deg FOV
+        self.assertTrue(all(s >= 10 for s in steps))  # broad, not mini moves
+
+    def test_measured_fov_not_assumed(self):
+        from tank_vision.centre import FOV_H_DEG, FOV_V_DEG
+        # a helper's feet, 50 cm apart at 185 cm, 2026-10-30: 32.7 x 24.8.
+        self.assertAlmostEqual(FOV_H_DEG, 33.0, delta=2.0)
+        self.assertAlmostEqual(FOV_V_DEG, 25.0, delta=2.0)
 
     def test_pan_positions_start_toward_nearest_end_then_sweep_back(self):
         pos = scan_pan_positions((0, 75), current=10)
-        self.assertEqual(pos[0], 0)
+        self.assertEqual(pos[0], 15)   # nearest stop to current pan
         self.assertEqual(pos[-1], 75)
 
     def test_tilts_add_a_floor_row_below_current(self):

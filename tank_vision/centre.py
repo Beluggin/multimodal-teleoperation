@@ -9,8 +9,13 @@ FOV figures are starting gains only (typical UVC cam); the loop is
 closed on the centroid, so a wrong gain costs steps, not correctness.
 """
 
-FOV_H_DEG = 60.0
-FOV_V_DEG = 45.0
+# Measured 2026-10-30, not the typical-UVC guess (was 60x45):
+# a helper's feet 50 cm apart (centres) at 185 cm spanned frame
+# x 0.459 -> 0.919, giving H 32.7 deg; V 24.8 from square pixels.
+# This lens is narrow ("zoomed in"): at 1.3 m a cat legitimately
+# filled 0.27 of frame. Frame width at 185 cm is only ~109 cm.
+FOV_H_DEG = 33.0
+FOV_V_DEG = 25.0
 
 # Calibrated 2026-10-30 (eyeball against the chassis nose, Adam):
 # the ch6 angle where the camera looks along the chassis centreline.
@@ -89,7 +94,9 @@ def camera_recenter_angles(aim, pan_angle, tilt_angle,
 # pose and the caller must not drive. Servo travel here is the physical
 # pan range (ch6 limits, 75 deg on this tank), not an assumed 180.
 # ---------------------------------------------------------------------------
-SCAN_STEP_DEG = 30.0   # half the 60 deg horizontal FOV: overlap, no gaps
+SCAN_STEP_DEG = 15.0   # ~half the measured 33 deg FOV (servo units):
+                       # overlap, no gaps. Was 30 under the 60 deg
+                       # assumption — a full FOV per step, gap-prone.
 SCAN_TILT_DROP = 30    # second row looks this far toward the floor
 
 
