@@ -2,6 +2,24 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Left-favour scan live: two cat runs
+
+Run 1: three spinl chassis turns (~180° left of search), scan
+FOUND at area 0.0028 — implausibly tiny for a cat, likely a
+false/distant match — tandem spin toward it, lost, verification
+scan found nothing, fail-closed stop. Run 2 (better): cat in
+frame at step 1 (area 0.043), then EVERY step lost its initial
+look and was recovered by the verification scan, areas growing
+0.085 → 0.081 → 0.091 → 0.132 across steps, forwards of 0.99 s
+and 0.83 s on the last two, final aim area 0.184 — ran out of
+5 steps, queue "done", stop verified. Left-favour turns work
+as intended; the pattern that remains is the post-tandem-move
+first look failing while the verification scan (same camera,
+fresh sweep) succeeds — the initial look after a tandem move
+is systematically weaker than the scan look. Next diagnostic
+candidate: compare first-look frames vs scan frames at the
+same pose (settle time / instance-centroid carry-over).
+
 ## 2026-10-30 — Beer run spun ~230° the wrong way (pre-fix code)
 
 Phone "go to the beer": neck scan missed, then THREE chassis
