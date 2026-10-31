@@ -35,6 +35,37 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-31 — Chained missions live; loss ladder (reverse, then chassis scan)
+
+Chained missions (6dd419d): "go to the blue ball then go to the mug".
+The parser accepts a chain only when every segment is a clean goto (max
+3); the Pi server + parser were redeployed (old parser kept as
+xiaor_text_action.py.bak-20261030; server restarted with the same flags;
+pose re-synced to pan 60 / tilt 36), and the launcher was restarted.
+Chain 1: mission 1 ball, 5 steps, ended with the ball under the camera
+(final aim None, Adam: "it got so close the ball is under the camera");
+mission 2 mug started 0.3 s later — handover proven; Adam stopped it
+mid-scan. Adam: early steps felt short → spin follow-up cap 1.0 → 2.0 s
+(2aeca86). Chain 2: ball seen at look 1, go 2.5 s, go 1.97 s (area
+0.012 → 0.041 → 0.186 by step 3), then lost at the ball → neck-only
+verification scan (12 stops) → mission FAILED → chain ended, mug never
+tried. Ground truth: the ball was under the nose.
+
+Cause: after tracking, recovery was neck-only (scan_for_target). The
+chassis-assisted scan (chassis_scan, built with Muse) ran only at step
+1, and tonight's step-1 neck sweeps always found the target first, so
+zero chassis turns ever happened. A neck/chassis turn can't see under
+the nose anyway.
+
+Fix (recover_after_loss): last seen close (area >= UNDER_AREA 0.08)
+→ reverse 0.5 s and look once; seen = ARRIVED (under camera), exit 0,
+so a chain continues. Otherwise / not seen → chassis_scan (neck sweep
++ chassis turns). Nothing → stop (fail closed). The fast loop's dy rule
+isn't reused: tandem recentres tilt every step, so dy at loss is
+unreliable; size alone gates the reverse. Tests: 4 red-first; vision 93.
+NOT yet live-tested. Still open: neck tilt is inherited between missions
+(mission 2 scanned from 29°); scan stops take 2 samples (≈5 s each).
+
 ## 2026-10-30 — "go to the blue ball": ARRIVED in 71 s, both fixes live-proven
 
 Phone launch 23:50:46, launcher --steps 5 --tandem, Claude monitoring.

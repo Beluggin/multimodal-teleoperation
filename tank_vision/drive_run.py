@@ -34,7 +34,9 @@ from tank_vision.centre_run import (  # noqa: E402
     recenter_servo, scan_for_target,
 )
 from tank_vision.centre import run_chassis_scan, tandem_plan  # noqa: E402
-from tank_vision.fast_track import FastTracker, blind_action  # noqa: E402
+from tank_vision.fast_track import (  # noqa: E402
+    UNDER_AREA, FastTracker, blind_action,
+)
 from tank_vision.pipeline import Box, VisionPipeline  # noqa: E402
 import xiaor_text_action as _xta  # noqa: E402
 
@@ -132,6 +134,32 @@ def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
 
     return run_chassis_scan(lambda: scan_fn(prompt), spin_once,
                             max_turns=max_turns)
+
+
+LOST_WIDE_SCAN = chassis_scan
+REVERSE_SECS = 0.5
+
+
+def recover_after_loss(prev_aim, look_fn, drive_fn, wide_fn, duty, trim):
+    """Tandem loss ladder -> (aim or None, arrived_under_camera).
+
+    1. Last seen close (area >= UNDER_AREA): it most likely slid under
+       the camera. Back off REVERSE_SECS and look once; seeing it now
+       means the tank had reached it -> arrived (Adam's 2026-10-31
+       ball runs: "lost" at the ball, chain killed, mug never tried).
+    2. Otherwise, or not seen after the reverse: the wide search —
+       neck sweep plus chassis turns (chassis_scan, built with Muse),
+       which recovery previously skipped (neck only).
+    3. Nothing: (None, False); the caller stops (fail closed).
+    """
+    if prev_aim is not None and prev_aim["area_frac"] >= UNDER_AREA:
+        print(f"  lost close (area {prev_aim['area_frac']:.3f}) — "
+              f"reverse {REVERSE_SECS:g}s and look")
+        drive_fn(f"rev {REVERSE_SECS:g} {duty} {trim}")
+        aim = look_fn()
+        if aim is not None:
+            return aim, True
+    return wide_fn(), False
 
 
 def should_tandem_recover(tandem, has_prev, recovered, found):
@@ -349,11 +377,21 @@ def main(argv=None):
                 # the camera at arrival, or just out of frame after
                 # the tandem spin. One neck scan, then re-judge.
                 tandem_recovered = True
-                print(f"step {step}: lost — verification scan "
-                      f"before failing")
-                aim = scan_for_target(args.prompt)
+                print(f"step {step}: lost — recovery before failing")
+                aim, under = recover_after_loss(
+                    prev_aim,
+                    look_fn=lambda: recognise_tracked(args.prompt)[0],
+                    drive_fn=drive,
+                    wide_fn=lambda: LOST_WIDE_SCAN(
+                        args.prompt, max_turns=args.scan_turns,
+                        spin=args.scan_spin, duty=args.duty),
+                    duty=args.duty, trim=args.trim)
+                if under:
+                    print(f"ARRIVED (under camera: seen again after "
+                          f"backing off, aim {aim})")
+                    return 0
                 if aim is not None:
-                    print(f"step {step}: verification found {aim}")
+                    print(f"step {step}: recovery found {aim}")
             if aim is None:
                 print(f"step {step}: target lost — stopping")
                 return 1

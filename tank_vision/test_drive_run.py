@@ -195,5 +195,57 @@ class DampedSpin(unittest.TestCase):
             self.assertLessEqual(secs, 0.5)
 
 
+class LostRecovery(unittest.TestCase):
+    """Tandem loss ladder: close -> reverse+look, then chassis-assisted scan."""
+    CLOSE = {"dx_right": -0.30, "dy_up": -0.23, "area_frac": 0.186}
+    FAR = {"dx_right": 0.10, "dy_up": 0.00, "area_frac": 0.03}
+    SEEN = {"dx_right": 0.0, "dy_up": -0.2, "area_frac": 0.2}
+
+    def run_ladder(self, prev, look=None, wide=None):
+        calls = []
+
+        def drive_fn(cmd):
+            calls.append(("motor", cmd))
+
+        def look_fn():
+            calls.append(("look",))
+            return look
+
+        def wide_fn():
+            calls.append(("wide",))
+            return wide
+
+        aim, under = drive_run.recover_after_loss(
+            prev, look_fn=look_fn, drive_fn=drive_fn, wide_fn=wide_fn,
+            duty=30, trim=17)
+        return aim, under, calls
+
+    def test_close_loss_reverses_then_looks(self):
+        aim, under, calls = self.run_ladder(self.CLOSE, look=self.SEEN)
+        self.assertEqual(calls[0], ("motor",
+                         f"rev {drive_run.REVERSE_SECS:g} 30 17"))
+        self.assertEqual(calls[1], ("look",))
+        self.assertTrue(under)          # seen after backing off = arrived
+        self.assertEqual(aim, self.SEEN)
+        self.assertNotIn(("wide",), calls)
+
+    def test_close_loss_not_seen_after_reverse_goes_wide(self):
+        aim, under, calls = self.run_ladder(self.CLOSE, look=None,
+                                            wide=self.FAR)
+        self.assertEqual([c[0] for c in calls], ["motor", "look", "wide"])
+        self.assertFalse(under)
+        self.assertEqual(aim, self.FAR)
+
+    def test_far_loss_never_reverses(self):
+        aim, under, calls = self.run_ladder(self.FAR, wide=None)
+        self.assertEqual(calls, [("wide",)])
+        self.assertIsNone(aim)
+        self.assertFalse(under)
+
+    def test_wide_search_is_chassis_assisted(self):
+        # Recovery must use the neck + chassis-turn scan, not neck only.
+        self.assertIs(drive_run.LOST_WIDE_SCAN, drive_run.chassis_scan)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
