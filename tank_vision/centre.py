@@ -28,11 +28,12 @@ FOV_V_DEG = 25.0
 # has almost no left travel left and the body must spin.
 PAN_FORWARD = 53
 
-# Physical degrees per ch6 servo unit, eyeball-calibrated with
-# PAN_FORWARD (pan 70 read ~20 deg view-left, pan 50 ~4 deg
-# view-right of the nose): (20 + 4) / (70 - 50) ~= 1.2. Rough —
-# visual re-looks after each tandem move absorb the error.
-SERVO_DEG_PER_UNIT = 1.2
+# Physical degrees per ch6 servo unit. Measured 2026-10-30 (Claude):
+# SAM dx of a fixed object at pan 45..61 rose 0.0258 per unit,
+# linear, backlash < 1 unit -> 0.0258 x FOV_H_DEG = 0.85. (The
+# earlier eyeball fit against the nose said 1.2.) Near targets
+# slightly overstate it; far ones may read a touch lower.
+SERVO_DEG_PER_UNIT = 0.85
 SPIN_THRESH_DEG = 5.0   # chassis ignores bearings below this
 
 
@@ -82,7 +83,8 @@ def camera_recenter_angles(aim, pan_angle, tilt_angle,
     """
     if centred(aim, tol):
         return None
-    pan = round(pan_angle - aim["dx_right"] * FOV_H_DEG)
+    pan = round(pan_angle
+                - aim["dx_right"] * FOV_H_DEG / SERVO_DEG_PER_UNIT)
     tilt = round(tilt_angle + aim["dy_up"] * FOV_V_DEG)
     pan = max(int(pan_limits[0]), min(int(pan_limits[1]), pan))
     tilt = max(int(tilt_limits[0]), min(int(tilt_limits[1]), tilt))

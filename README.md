@@ -4,10 +4,14 @@ Meta hackathon entry: words become actions on a XiaoR Geek tank.
 Natural-language target → Meta model interprets and finds it → tank moves
 in short bounded steps → stops at the target.
 
-Status: standalone tank utilities imported; multimodal demo integration remains
-to be built. The intended safety posture is no movement for unknown, negated
-or ambiguous input, with stop taking priority. Existing decimal-duration and
-stop-priority bugs remain; the passing baseline tests do not cover them.
+Status: phone controls, speech routing, and the Meta SAM autonomous
+approach loop are integrated; live approach runs are recorded in DEVLOG.md.
+Demo reliability remains open: tandem recovery currently runs even on a
+successful look, arrival uses a size-blind area threshold, and step-cap
+exhaustion reports success. See HANDOFF.md and the latest DEVLOG review.
+Decimal-duration and stop-priority parser regressions now have passing
+tests (41 parser tests on 2026-10-30). Unknown, negated, or ambiguous input
+must not move hardware; stop takes priority.
 
 No tokens or keys in this repo, ever.
 

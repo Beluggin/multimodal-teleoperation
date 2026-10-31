@@ -2,6 +2,63 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Codex offline repository review
+
+Reviewed clean working tree at bb31595, drive/recovery control flow,
+launcher lifecycle, recent IPv4 change, and project status documents.
+No hardware commands or hosted API calls were made; runtime code unchanged.
+
+Confirmed priority bug: drive_run.py's should_tandem_recover call lacks
+an `aim is None` guard. After the first successful step, tandem mode
+unconditionally logs "lost" and replaces even a valid recognition with
+a scan result. Fully mocked two-step main() reproduction: recognition
+always returned a valid aim; recovery nevertheless ran once, returned
+None, and the run exited 1. Existing helper tests miss this caller bug.
+Proposed fix: guard on actual loss and add main-loop regression coverage
+for successful tracking and real loss. Not implemented in this review.
+Prior live entries' repeated "first-look lost" interpretation is therefore
+unproven: those messages alone do not establish recognition failure.
+Preserve raw recognition results before diagnosing calibration/settling.
+
+Other findings: step-cap exhaustion returns 0 regardless of final aim,
+so launcher reports done without proving arrival; area >0.25 remains
+size-blind. Launcher lacks child cleanup on parent interruption despite
+its Ctrl+C docstring; the handoff already warns of orphaned runs.
+Non-tandem spin_secs_for_dx still uses 60 degrees rather than the measured
+33-degree horizontal FOV. These remain review findings, not fixes.
+
+Checks: vision 80 run, 79 passed / 1 skipped; parser 41 passed;
+phone 38 passed; speech 28 passed; round-table 6 passed. Phone/speech
+initially hit sandbox socket restrictions, then passed outside sandbox
+using their local fake servers. Vision import emitted an Ultralytics
+settings-reset warning. No live readiness or physical state verified.
+Updated README opening status and HANDOFF review note to reflect these
+findings; historical live entries preserved.
+
+## 2026-10-30 — Pan measured: 0.85 deg/unit (was 1.2 / implied 1.0)
+
+Servo-only test, Adam authorised (motors untouched, tilt 36 held,
+pan restored to 53). Fixed object on the desk (an astronaut light;
+SAM called it "white paper" consistently in all 18 frames). Pan
+53→49→45→49→53→57→61→57→53, 2 SAM looks per stop:
+
+  pan 45 −0.197 · 49 −0.088/−0.095 · 53 +0.016/+0.014/−0.005
+  · 57 +0.117/+0.107 · 61 +0.220
+
+Linear, 0.0258 dx/unit x 33° FOV = 0.85 deg/unit; frame-to-frame
+noise ~0.001; backlash ~0.01–0.02 dx (<1 unit). Near object (~40 cm)
+so pivot parallax may overstate slightly. Adam had an earlier Meta
+measurement (number not compared here); he OKed the change.
+
+Code had two scales for one servo: tandem bearing used 1.2 (neck
+angle overstated ~40%, so every tandem spin overshot), recentre used
+an implied 1.0. Now both use SERVO_DEG_PER_UNIT = 0.85; recentre
+converts degrees to units. Tilt still assumes 1 deg/unit (unmeasured).
+Tests: 4 red-first in test_centre.py (old saturated-bearing test
+updated from the eyeball ~25° to 22 x 0.85). Suites: vision 83, parser
+41, phone 38, speech 28, all OK. Next: re-run the foot and see whether
+the post-move first looks stop missing.
+
 ## 2026-10-30 — First run on the IPv4 fix: "go to the foot", 5 steps in 68 s
 
 Phone launch, launcher --steps 5 --tandem, Claude monitoring the

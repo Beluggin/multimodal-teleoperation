@@ -22,12 +22,24 @@ class TestTandemPlan(unittest.TestCase):
 
     def test_saturated_camera_bearing_includes_neck_offset(self):
         from tank_vision.centre import tandem_plan
-        # Camera at pan 75 is looking ~25 deg view-left of the nose;
-        # a centred target is therefore ~25 deg left of chassis.
+        # Camera at pan 75 is 22 units view-left of the nose, ~19 deg
+        # at the measured 0.85 deg/unit; a centred target is that far
+        # left of the chassis.
         plan = tandem_plan({"dx_right": 0.0, "dy_up": 0.0},
                            pan_angle=75, tilt_angle=40)
         self.assertEqual(plan["action"], "spin")
-        self.assertLess(plan["bearing_deg"], -20)
+        self.assertAlmostEqual(plan["bearing_deg"], -22 * 0.85, delta=0.5)
+
+    def test_forward_recentre_points_neck_at_the_bearing(self):
+        from tank_vision.centre import PAN_FORWARD, tandem_plan, SERVO_DEG_PER_UNIT
+        # The neck pan chosen to centre the target must agree with the
+        # bearing the same plan computed (one deg/unit, not two).
+        plan = tandem_plan({"dx_right": 0.12, "dy_up": 0.0},
+                           pan_angle=55, tilt_angle=40)
+        self.assertEqual(plan["action"], "forward")
+        neck_bearing = (PAN_FORWARD - plan["pan"]) * SERVO_DEG_PER_UNIT
+        self.assertAlmostEqual(neck_bearing, plan["bearing_deg"],
+                               delta=SERVO_DEG_PER_UNIT / 2 + 0.01)
 
     def test_small_bearing_forwards_and_centres_camera(self):
         from tank_vision.centre import tandem_plan
@@ -43,6 +55,13 @@ class TestCalibration(unittest.TestCase):
         self.assertTrue(0 < PAN_FORWARD < 75)
         self.assertEqual(75 - PAN_FORWARD, 22)  # view-left travel
         self.assertEqual(PAN_FORWARD - 0, 53)   # view-right travel
+
+    def test_servo_deg_per_unit_measured(self):
+        # Measured 2026-10-30 (Claude, SAM on a fixed object, pan
+        # 45..61): dx 0.0258/unit x 33 deg = 0.85 deg/unit, linear,
+        # backlash < 1 unit. The old eyeball fit said 1.2.
+        from tank_vision.centre import SERVO_DEG_PER_UNIT
+        self.assertAlmostEqual(SERVO_DEG_PER_UNIT, 0.85, delta=0.05)
 
 
 class TestCentre(unittest.TestCase):
@@ -193,6 +212,12 @@ class TestRecenter(unittest.TestCase):
         pan, _ = camera_recenter_angles(
             {"dx_right": -0.37, "dy_up": 0.0}, 57, 43, (0, 75), (30, 120))
         self.assertGreater(pan, 57)
+
+    def test_recentre_converts_degrees_to_servo_units(self):
+        # dx 0.2 = 6.6 deg = 7.8 units at 0.85 deg/unit (not 6.6 units).
+        pan, _ = camera_recenter_angles(
+            {"dx_right": 0.2, "dy_up": 0.0}, 53, 43, (0, 75), (30, 120))
+        self.assertEqual(pan, 45)
 
     def test_centred_target_needs_no_move(self):
         self.assertIsNone(camera_recenter_angles(
