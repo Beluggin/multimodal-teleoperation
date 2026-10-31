@@ -54,7 +54,7 @@ STEP_MIN_SECS = 0.5   # near the target: shortest, safest step
 STEP_MAX_SECS = 2.5   # far away: longest blind step (listener caps 3 s);
                       # raised from 1.5 on Adam's call — ~4 in per old
                       # step at cat distance was far too timid
-SPIN_FOLLOW_MAX_SECS = 1.0  # forward step chained after a tandem spin
+SPIN_FOLLOW_MAX_SECS = 2.0  # forward step chained after a tandem spin (1.0 felt short, Adam)
 
 
 SPIN_MIN_SECS = 0.07
