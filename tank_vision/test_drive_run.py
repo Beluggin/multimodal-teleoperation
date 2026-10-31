@@ -69,6 +69,31 @@ class AdaptiveStep(unittest.TestCase):
                                  drive_run.STEP_MIN_SECS)
 
 
+class TandemMove(unittest.TestCase):
+    def test_servo_and_motor_both_run_for_one_picture(self):
+        calls = []
+        plan = {"pan": 53, "tilt": 40, "action": "spin",
+                "bearing_deg": 12.0}
+        drive_run.run_tandem(
+            plan, "spinr 0.11 30",
+            servo_fn=lambda pan, tilt: calls.append(("servo", pan, tilt)) or True,
+            drive_fn=lambda cmd: calls.append(("motor", cmd)))
+        self.assertIn(("servo", 53, 40), calls)
+        self.assertIn(("motor", "spinr 0.11 30"), calls)
+
+    def test_motor_failure_propagates(self):
+        plan = {"pan": 53, "tilt": 40, "action": "forward",
+                "bearing_deg": 1.0}
+
+        def bad(cmd):
+            raise RuntimeError("listener down")
+
+        with self.assertRaises(RuntimeError):
+            drive_run.run_tandem(plan, "go 1 30 17",
+                                 servo_fn=lambda p, t: True,
+                                 drive_fn=bad)
+
+
 class ChassisScan(unittest.TestCase):
     def test_turns_toward_long_side_and_rescans_until_found(self):
         scans, drives = [], []

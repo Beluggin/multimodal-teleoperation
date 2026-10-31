@@ -11,6 +11,32 @@ from tank_vision.centre import (  # noqa: E402
 )
 
 
+class TestTandemPlan(unittest.TestCase):
+    def test_straight_camera_offcentre_target_spins_chassis(self):
+        from tank_vision.centre import tandem_plan
+        plan = tandem_plan({"dx_right": 0.30, "dy_up": 0.0},
+                           pan_angle=53, tilt_angle=40)
+        self.assertEqual(plan["action"], "spin")
+        self.assertAlmostEqual(plan["bearing_deg"], 0.30 * 33.0, places=1)
+        self.assertEqual(plan["pan"], 53)  # neck returns to forward
+
+    def test_saturated_camera_bearing_includes_neck_offset(self):
+        from tank_vision.centre import tandem_plan
+        # Camera at pan 75 is looking ~25 deg view-left of the nose;
+        # a centred target is therefore ~25 deg left of chassis.
+        plan = tandem_plan({"dx_right": 0.0, "dy_up": 0.0},
+                           pan_angle=75, tilt_angle=40)
+        self.assertEqual(plan["action"], "spin")
+        self.assertLess(plan["bearing_deg"], -20)
+
+    def test_small_bearing_forwards_and_centres_camera(self):
+        from tank_vision.centre import tandem_plan
+        plan = tandem_plan({"dx_right": 0.10, "dy_up": 0.0},
+                           pan_angle=53, tilt_angle=40)
+        self.assertEqual(plan["action"], "forward")
+        self.assertLess(plan["pan"], 53)  # view-right = ch6 down
+
+
 class TestCalibration(unittest.TestCase):
     def test_pan_forward_inside_limits_with_asymmetric_travel(self):
         from tank_vision.centre import PAN_FORWARD

@@ -186,6 +186,25 @@ def recenter_servo(aim):
     return True
 
 
+def move_camera(pan, tilt):
+    """Move pan/tilt to absolute angles; True when both accepted.
+
+    Used by the tandem move (Step 2), which drives the neck to a
+    planned pose concurrently with a chassis move instead of
+    recentring-then-relooking. No recognition happens here.
+    """
+    state = api("/api/servo")
+    if not state.get("enabled"):
+        return False
+    for ch, ang in ((6, int(pan)), (5, int(tilt))):
+        if ang != state["state"][str(ch)]:
+            r = api("/api/servo", {"channel": ch, "angle": ang})
+            if not r.get("ok"):
+                print(f"move_camera: ch{ch} refused {r}")
+                return False
+    return True
+
+
 def recalibrate_camera(prompt, aim):
     """Recentre the camera on the target after a body move, then re-look.
 

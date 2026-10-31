@@ -26,6 +26,13 @@ FOV_V_DEG = 25.0
 # has almost no left travel left and the body must spin.
 PAN_FORWARD = 53
 
+# Physical degrees per ch6 servo unit, eyeball-calibrated with
+# PAN_FORWARD (pan 70 read ~20 deg view-left, pan 50 ~4 deg
+# view-right of the nose): (20 + 4) / (70 - 50) ~= 1.2. Rough —
+# visual re-looks after each tandem move absorb the error.
+SERVO_DEG_PER_UNIT = 1.2
+SPIN_THRESH_DEG = 5.0   # chassis ignores bearings below this
+
 
 def plan_step(aim, sign_pan=1, sign_tilt=1, max_step=5.0):
     """aim -> (pan_deg, tilt_deg) step, each clamped to +/-max_step.
@@ -80,6 +87,34 @@ def camera_recenter_angles(aim, pan_angle, tilt_angle,
     if pan == int(pan_angle) and tilt == int(tilt_angle):
         return None
     return pan, tilt
+
+
+def tandem_plan(aim, pan_angle, tilt_angle, pan_limits=(0, 75),
+                tilt_limits=(20, 120)):
+    """One picture -> one combined neck+chassis move (Step 2).
+
+    The target's bearing off the chassis nose is the camera's own
+    heading offset plus where the target sits in the frame:
+        bearing = (PAN_FORWARD - pan) * SERVO_DEG_PER_UNIT
+                  + dx_right * FOV_H_DEG     (view-right positive)
+    A bearing past SPIN_THRESH_DEG is a chassis spin of the full
+    bearing while the neck returns to PAN_FORWARD — both from the
+    SAME acquired picture, concurrently, no confirm-look between.
+    A small bearing drives forward while the neck centres on the
+    target as today. Tilt always recentres from the fresh aim.
+    """
+    bearing = ((PAN_FORWARD - pan_angle) * SERVO_DEG_PER_UNIT
+               + aim["dx_right"] * FOV_H_DEG)
+    tilt = round(tilt_angle + aim["dy_up"] * FOV_V_DEG)
+    tilt = max(int(tilt_limits[0]), min(int(tilt_limits[1]), tilt))
+    if abs(bearing) > SPIN_THRESH_DEG:
+        return {"action": "spin", "bearing_deg": round(bearing, 2),
+                "pan": PAN_FORWARD, "tilt": tilt}
+    centred = camera_recenter_angles(aim, pan_angle, tilt_angle,
+                                     pan_limits, tilt_limits)
+    pan = centred[0] if centred else int(pan_angle)
+    return {"action": "forward", "bearing_deg": round(bearing, 2),
+            "pan": pan, "tilt": tilt}
 
 
 # ---------------------------------------------------------------------------

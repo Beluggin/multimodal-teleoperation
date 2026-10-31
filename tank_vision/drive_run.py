@@ -23,16 +23,17 @@ import argparse
 import os
 import subprocess
 import sys
+import threading
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "tank_tools"))
 from tank_vision.centre_run import (  # noqa: E402
-    grab, recognise_tracked, recalibrate_camera, recenter_servo,
-    scan_for_target,
+    api, grab, move_camera, recognise_tracked, recalibrate_camera,
+    recenter_servo, scan_for_target,
 )
-from tank_vision.centre import run_chassis_scan  # noqa: E402
+from tank_vision.centre import run_chassis_scan, tandem_plan  # noqa: E402
 from tank_vision.fast_track import FastTracker, blind_action  # noqa: E402
 from tank_vision.pipeline import Box, VisionPipeline  # noqa: E402
 import xiaor_text_action as _xta  # noqa: E402
@@ -130,6 +131,55 @@ def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
                             max_turns=max_turns)
 
 
+def run_tandem(plan, motor_cmd, servo_fn=None, drive_fn=None):
+    """Step 2: neck + chassis from ONE picture, concurrently.
+
+    The servo move and the motor command run in parallel threads —
+    the chassis turn eats the servo travel time instead of waiting
+    for a recalibrate + confirm-look cycle. A motor failure raises
+    (the caller's finally stops the tank); a servo failure is only
+    noted, because the next fresh look recalibrates anyway.
+    """
+    servo_fn = servo_fn or move_camera
+    drive_fn = drive_fn or drive
+    errors = []
+
+    def do_servo():
+        try:
+            if not servo_fn(plan["pan"], plan["tilt"]):
+                print("tandem: servo move refused — continuing")
+        except Exception as e:
+            print(f"tandem: servo error ({e}) — continuing")
+
+    def do_motor():
+        try:
+            drive_fn(motor_cmd)
+        except Exception as e:
+            errors.append(e)
+
+    threads = [threading.Thread(target=do_servo),
+               threading.Thread(target=do_motor)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    if errors:
+        raise errors[0]
+
+
+def tandem_motor_cmd(plan, aim, args):
+    """Motor half of a tandem plan (spin the full bearing, or go)."""
+    if plan["action"] == "spin":
+        spin = "spinr" if plan["bearing_deg"] > 0 else "spinl"
+        secs = round(min(0.8, max(SPIN_MIN_SECS,
+                                  abs(plan["bearing_deg"])
+                                  / SPIN_DEG_PER_SEC)), 2)
+        return f"{spin} {secs:.2f} {args.duty}", secs
+    secs = (args.step_secs if args.step_secs is not None
+            else step_secs_for_area(aim["area_frac"]))
+    return f"go {secs:g} {args.duty} {args.trim}", secs
+
+
 def fast_look(tracker, prompt, prev_centroid=None):
     """One fast-loop look: MobileSAM track; Meta SAM only on suspicion.
 
@@ -183,6 +233,10 @@ def main(argv=None):
                     default="spinr",
                     help="chassis-scan turn direction (default spinr: "
                          "the camera's long side)")
+    ap.add_argument("--tandem", action="store_true",
+                    help="step 2: neck + chassis concurrently from one "
+                         "picture (no recalibrate confirm-look); "
+                         "ignored with --fast")
     args = ap.parse_args(argv)
     if args.text:
         target, why = resolve_prompt(args.text)
@@ -210,10 +264,12 @@ def main(argv=None):
                         tracker.lock(Box(mb["x0"], mb["y0"],
                                          mb["x1"], mb["y1"]),
                                      aim["area_frac"])
-                elif aim is not None:
+                elif aim is not None and not args.tandem:
                     # Recalibrate the camera on the target BEFORE any
                     # motor decision — and, on later steps, after the
                     # last move. Fresh aim only; no remembered sign.
+                    # Tandem mode skips this: the same picture plans
+                    # both the neck and chassis move below.
                     aim = recalibrate_camera(args.prompt, aim)
             if aim is None and prev is None and not scanned:
                 # Never seen it this run: wide head scan before giving
@@ -259,7 +315,25 @@ def main(argv=None):
             if aim["area_frac"] > ARRIVE_AREA:
                 print(f"ARRIVED (area {aim['area_frac']:.2f} > {ARRIVE_AREA})")
                 return 0
-            if abs(aim["dx_right"]) > 0.15:
+            if args.tandem and tracker is None:
+                # Step 2: plan neck + chassis from THIS picture and
+                # move both at once. No confirm-look in between.
+                st = api("/api/servo")
+                plan = tandem_plan(
+                    aim, st["state"]["6"], st["state"]["5"],
+                    (st["limits"]["6"][0], st["limits"]["6"][1]),
+                    (st["limits"]["5"][0], st["limits"]["5"][1])) \
+                    if st.get("enabled") else None
+                if plan is None:
+                    print("  tandem: servo unavailable — stopping")
+                    return 1
+                cmd, secs = tandem_motor_cmd(plan, aim, args)
+                print(f"  tandem: bearing {plan['bearing_deg']:+.1f} deg "
+                      f"-> neck pan {plan['pan']} + motor '{cmd}'")
+                run_tandem(plan, cmd)
+                if plan["action"] == "spin":
+                    last_dx, last_spin_secs = aim["dx_right"], secs
+            elif abs(aim["dx_right"]) > 0.15:
                 spin = "spinr" if aim["dx_right"] > 0 else "spinl"
                 secs = spin_secs_for_dx(aim["dx_right"], last_dx,
                                         last_spin_secs)

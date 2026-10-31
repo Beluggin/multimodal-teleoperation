@@ -114,12 +114,14 @@ class Launcher:
             print("launcher: bye", flush=True)
 
 
-def run_drive_subprocess(text, steps, fast, should_stop):
+def run_drive_subprocess(text, steps, fast, should_stop, tandem=False):
     """drive_run as a subprocess; SIGINT on stop (its finally stops)."""
     cmd = [sys.executable, "-m", "tank_vision.drive_run",
            "--text", text, "--steps", str(steps)]
     if fast:
         cmd.append("--fast")
+    if tandem:
+        cmd.append("--tandem")
     proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, text=True)
     lines = queue.Queue()
@@ -160,9 +162,12 @@ def main(argv=None):
     ap.add_argument("--steps", type=int, default=5)
     ap.add_argument("--fast", action="store_true",
                     help="use the fast MobileSAM loop (default: proven)")
+    ap.add_argument("--tandem", action="store_true",
+                    help="step 2: concurrent neck+chassis moves")
     args = ap.parse_args(argv)
-    Launcher(pi_json, run_drive_subprocess, steps=args.steps,
-             fast=args.fast).run()
+    from functools import partial
+    Launcher(pi_json, partial(run_drive_subprocess, tandem=args.tandem),
+             steps=args.steps, fast=args.fast).run()
     return 0
 
 
