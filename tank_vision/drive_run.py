@@ -131,6 +131,19 @@ def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
                             max_turns=max_turns)
 
 
+def should_tandem_recover(tandem, has_prev, recovered):
+    """One verification recovery per tandem loss, never a loop.
+
+    A loss after a close approach often means the target slid
+    under the camera at arrival (Adam confirmed a 'failed' run
+    had physically reached the mug, 2026-10-30) — so a tandem
+    loss earns ONE neck scan to verify/reacquire before the run
+    is allowed to report failure. Non-tandem paths keep their
+    proven plain-stop behaviour.
+    """
+    return bool(tandem and has_prev and not recovered)
+
+
 def run_tandem(plan, motor_cmd, servo_fn=None, drive_fn=None):
     """Step 2: neck + chassis from ONE picture, concurrently.
 
@@ -251,6 +264,7 @@ def main(argv=None):
     last_dx, last_spin_secs = None, None
     tracker = FastTracker(VisionPipeline()) if args.fast else None
     prev_aim, blind_used = None, False
+    tandem_recovered = False
     try:
         for step in range(1, args.steps + 1):
             if tracker is not None and tracker.locked:
@@ -306,9 +320,21 @@ def main(argv=None):
                     blind_used = True
                     time.sleep(1.2)
                     continue
+            if should_tandem_recover(args.tandem, prev is not None,
+                                     tandem_recovered):
+                # Verify before failing: the target may be under
+                # the camera at arrival, or just out of frame after
+                # the tandem spin. One neck scan, then re-judge.
+                tandem_recovered = True
+                print(f"step {step}: lost — verification scan "
+                      f"before failing")
+                aim = scan_for_target(args.prompt)
+                if aim is not None:
+                    print(f"step {step}: verification found {aim}")
             if aim is None:
                 print(f"step {step}: target lost — stopping")
                 return 1
+            tandem_recovered = False
             prev = (aim["dx_right"] + 0.5, 0.5 - aim["dy_up"])
             prev_aim, blind_used = aim, False
             print(f"step {step}: aim={aim}")

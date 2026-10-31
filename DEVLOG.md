@@ -12,12 +12,16 @@ spinr 0.34 s), step 2 residual dx −0.152 (slight overshoot,
 bearing −5.0°), then neck 58 + a 2.47 s forward (area 0.026 —
 the new big-step curve at small area), target lost at step 3.
 So tandem actuation works as designed (one look, concurrent
-neck+chassis, no confirm-look), but post-spin re-acquisition
-and the long blind forward both lose a small target. Likely
-contributors: spin-rate estimate (110°/s nominal) error over
-~40°, and 2.5 s blind steps at far areas. Adam's ground truth
-on spin direction/amount still to collect. Cat not attempted
-under tandem yet.
+neck+chassis, no confirm-look). CORRECTION (Adam, ground
+truth): run 2 DID reach the mug — its "target lost" ending was
+the target sliding under the camera at arrival, reported as
+failure with no end verification. That is the real second-
+stage bug. Fix: a tandem loss after tracking now earns ONE
+verification neck scan (scan_for_target, incl. floor tilt row)
+before the run may fail — a found target re-enters the loop
+and can ARRIVE properly. Run 1's immediate post-spin loss
+gets the same recovery. Spin-rate drift over ~40° remains a
+suspect for residual error. Cat not attempted under tandem yet.
 
 ## 2026-10-30 — Correction: second cat spoiled the scan (not a failure)
 

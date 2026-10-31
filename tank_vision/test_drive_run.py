@@ -70,6 +70,16 @@ class AdaptiveStep(unittest.TestCase):
 
 
 class TandemMove(unittest.TestCase):
+    def test_loss_after_tracking_gets_one_recovery(self):
+        self.assertTrue(drive_run.should_tandem_recover(
+            tandem=True, has_prev=True, recovered=False))
+        self.assertFalse(drive_run.should_tandem_recover(
+            tandem=True, has_prev=True, recovered=True))
+        self.assertFalse(drive_run.should_tandem_recover(
+            tandem=False, has_prev=True, recovered=False))
+        self.assertFalse(drive_run.should_tandem_recover(
+            tandem=True, has_prev=False, recovered=False))
+
     def test_servo_and_motor_both_run_for_one_picture(self):
         calls = []
         plan = {"pan": 53, "tilt": 40, "action": "spin",
