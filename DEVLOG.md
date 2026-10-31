@@ -35,6 +35,25 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-31 — CHAIN COMPLETE: blue ball → mug in 67 s (both sweeps live)
+
+Chain 5, "go to the blue ball then go to the mug", mug placed off to
+the right (where chain 4's always-left search never looked). 00:41:37
+→ 00:42:44, 67 s for BOTH missions, every stop ok:
+
+  mission 1  look 1: area 0.030 → go 2.33 s → lost → sweep [75, 29, 4]
+             found at the FIRST stop, box on frame bottom → ARRIVED (22 s)
+  mission 2  sweep from pan 75: [50, 25, 0] → mug at pan 0 (far right)
+             after 17.6 s → +48.5° → spinr 0.44 + chained go 1.99 s →
+             lost (spin undershoot) → sweep [75, 28, 3] → found at
+             pan 28, box on frame bottom → ARRIVED (45 s)
+
+Live-proven: Adam's outward neck sweep (3 stops a row, not 6), the
+bottom-clip arrival (twice), the spin→drive chain, the chain handover.
+No chassis turn was needed this time, so the alternating chassis turns
+are still unproven live. Remaining waste: the short-spin undershoot
+(0.44 s for 48°) cost one loss + sweep.
+
 ## 2026-10-31 — Chassis turns alternate too (L60, R120, L180)
 
 Ground truth from chain 4 mission 2 (Adam): "It didn't go to the mug. It
