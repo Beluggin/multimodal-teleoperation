@@ -2,6 +2,25 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — "Dungeon Crawler Carl": found, 60 cm short, cats intrude
+
+Phone launch, prompt "dungeon crawler carl" (the book). Wide
+scan found it at look 9 (area 0.036) after chassis turns. Then
+the verification recovery earned its keep: steps 2–5 ALL lost
+the initial look and ALL were recovered by the verification
+scan (found areas 0.037 → 0.012 → 0.120 → 0.095), with cat
+intrusions in frame during the run (Adam) likely breaking the
+tracked-instance look. Tandem bearings were mostly small
+(+20.4 spin, then −0.2 / −6.4 / −17.8 / +3.1). Ran out of its
+5 steps at final area 0.205 (dx −0.198): queue "done", stop
+verified — and Adam's ground truth: stopped ~60 cm short of
+the book. So: found and approached the right target through
+repeated interference, but the per-step verification scans
+(~40 s each) ate the step budget before arrival. Lesson:
+verification recovery works, but needing it every step means
+the post-move first look is the weak link (pose/instance),
+and step caps end runs mid-approach.
+
 ## 2026-10-30 — Tandem live on mug: executes, tracking still loses it
 
 Step 2 live via phone (launcher --tandem, listener revived).
