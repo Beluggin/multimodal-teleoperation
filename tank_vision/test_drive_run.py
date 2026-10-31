@@ -345,6 +345,21 @@ class LostRecovery(unittest.TestCase):
         self.assertIsNone(aim)
         self.assertFalse(under)
 
+    def test_far_loss_right_after_forward_step_reverses_first(self):
+        # Chain 6 mug (Adam): last seen small (0.029), then a 2 s go put
+        # the short mug under the camera; the ladder skipped the reverse
+        # and chassis-scanned away from a mug under its chin.
+        calls = []
+        aim, under = drive_run.recover_after_loss(
+            self.FAR, look_fn=lambda: calls.append(("look",)) or self.SEEN,
+            drive_fn=lambda c: calls.append(("motor", c)),
+            wide_fn=lambda: calls.append(("wide",)),
+            duty=30, trim=17, after_forward=True)
+        self.assertEqual(calls[0], ("motor",
+                         f"rev {drive_run.REVERSE_SECS:g} 30 17"))
+        self.assertTrue(under)
+        self.assertNotIn(("wide",), calls)
+
     def test_wide_search_is_chassis_assisted(self):
         # Recovery must use the neck + chassis-turn scan, not neck only.
         self.assertIs(drive_run.LOST_WIDE_SCAN, drive_run.chassis_scan)

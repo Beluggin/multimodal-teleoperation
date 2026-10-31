@@ -35,6 +35,27 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-31 — Chain 6: both stages; loss after a forward step reverses first
+
+Chain 6 (arrival confirm live): ball — step 2 bottom-clipped →
+"arrival check: bearing -4.0 → neck pan 58 tilt 34" → ball fully in
+frame (0.144) → go 0.79 s → area 0.28 + clipped → "arrival check:
+bearing -10.2 → spinl 0.09, tilt 26" → ARRIVED, facing it, 38 s.
+Mug: sweep found it at pan 3 (+50.3°) → spinr 0.46 (undershot ~15°)
+→ spinr 0.13 + go 2 s → lost → sweep + chassis turn 1 (spinl 60, the
+alternating turns' first live use). Adam: "It got to the mug and the
+mug was shorter than the camera angle … wild pump arm celebrated
+because second stage went. 2nd camera alignment was slow, but
+everything else was incredible."
+
+Cause: the last sighting was small (0.029, y_bottom 0.87), so the ladder
+skipped the reverse; the 2 s go had put the short mug under the camera.
+Fix: recover_after_loss(after_forward=True) reverses + looks first
+whenever the losing move drove forward (tandem go, or spin + chained
+go); the arrival-check move (no go) clears it. Test: 1 red-first;
+vision 106. NOT yet live-tested. The slow second alignment = the
+short-spin undershoot (0.46 s for 50° turned ~35°).
+
 ## 2026-10-31 — Arrival confirm: face it and aim down before ARRIVED
 
 An arrived aim (area > 0.25 or bottom-clipped) in tandem mode now gets

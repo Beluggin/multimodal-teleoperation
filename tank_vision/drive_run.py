@@ -179,7 +179,8 @@ LOST_WIDE_SCAN = chassis_scan
 REVERSE_SECS = 0.5
 
 
-def recover_after_loss(prev_aim, look_fn, drive_fn, wide_fn, duty, trim):
+def recover_after_loss(prev_aim, look_fn, drive_fn, wide_fn, duty, trim,
+                       after_forward=False):
     """Tandem loss ladder -> (aim or None, arrived_under_camera).
 
     1. Last seen close (area >= UNDER_AREA): it most likely slid under
@@ -190,11 +191,19 @@ def recover_after_loss(prev_aim, look_fn, drive_fn, wide_fn, duty, trim):
        neck sweep plus chassis turns (chassis_scan, built with Muse),
        which recovery previously skipped (neck only).
     3. Nothing: (None, False); the caller stops (fail closed).
+
+    after_forward: the move that lost it was a forward step. Chain 6
+    (2026-10-31): a small, SHORT mug (0.029) was driven under the
+    camera by one 2 s go; area/clip said "far", so it chassis-scanned
+    away from a mug under its chin. A loss right after going forward
+    reverses first whatever the last area.
     """
-    if prev_aim is not None and (prev_aim["area_frac"] >= UNDER_AREA
+    if prev_aim is not None and (after_forward
+                                 or prev_aim["area_frac"] >= UNDER_AREA
                                  or bottom_clipped(prev_aim)):
-        print(f"  lost close (area {prev_aim['area_frac']:.3f}) — "
-              f"reverse {REVERSE_SECS:g}s and look")
+        why = ("right after a forward step" if after_forward
+               else f"close (area {prev_aim['area_frac']:.3f})")
+        print(f"  lost {why} — reverse {REVERSE_SECS:g}s and look")
         drive_fn(f"rev {REVERSE_SECS:g} {duty} {trim}")
         aim = look_fn()
         if aim is not None:
@@ -357,6 +366,7 @@ def main(argv=None):
     prev_aim, blind_used = None, False
     tandem_recovered = False
     arrival_checked = False
+    last_forward = False   # did the last move drive forward?
     try:
         for step in range(1, args.steps + 1):
             if tracker is not None and tracker.locked:
@@ -427,7 +437,8 @@ def main(argv=None):
                     wide_fn=lambda: LOST_WIDE_SCAN(
                         args.prompt, max_turns=args.scan_turns,
                         spin=args.scan_spin, duty=args.duty),
-                    duty=args.duty, trim=args.trim)
+                    duty=args.duty, trim=args.trim,
+                    after_forward=last_forward)
                 if under:
                     print(f"ARRIVED (under camera: seen again after "
                           f"backing off, aim {aim})")
@@ -459,6 +470,7 @@ def main(argv=None):
                           f"{plan['pan']} tilt {plan['tilt']}"
                           f"{' + ' + repr(cmd) if cmd else ''}, then look")
                     run_tandem(plan, cmd)
+                    last_forward = False
                     time.sleep(1.2)
                     continue
             if arrived(aim):
@@ -489,6 +501,7 @@ def main(argv=None):
                 if follow is not None:
                     print(f"  tandem: then '{follow}'")
                     drive(follow)
+                last_forward = cmd.startswith("go") or follow is not None
             elif abs(aim["dx_right"]) > 0.15:
                 spin = "spinr" if aim["dx_right"] > 0 else "spinl"
                 secs = spin_secs_for_dx(aim["dx_right"], last_dx,
