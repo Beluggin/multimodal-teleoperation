@@ -35,6 +35,29 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-30 — "go to the blue ball": ARRIVED in 71 s, both fixes live-proven
+
+Phone launch 23:50:46, launcher --steps 5 --tandem, Claude monitoring.
+Step 1: not in frame → wide scan, found at pan 60 on the 5th stop
+(29 s, area 0.013, bearing −17.7°). Then:
+
+  step 1  spinl 0.16 → then 'go 1'        (spin→drive chain LIVE)
+  step 2  aim direct, area 0.021, −9.1°  → spinl 0.08 → go 1   (7.3 s)
+  step 3  aim direct, area 0.037, −5.9°  → spinl 0.07 → go 1   (7.5 s)
+  step 4  aim direct, area 0.082, −4.8°  → go 1.05, neck 59    (8.4 s)
+  step 5  real loss (ball low, dy −0.14 at 0.08, under camera) →
+          verification scan, first stop: area 0.264 → ARRIVED, stop ok
+
+Bug #1 fix proven: steps 2–4 went straight to aim, no false "lost";
+the only scan was a genuine loss, which is what recovery is for.
+Spin→drive chain proven: every spin followed by a capped go.
+Short spins (0.07–0.16 s) only turned ~half the bearing (bug #3);
+the loop absorbed it, but a minimum spin/kick-start is the next win.
+
+Tonight's arc: cat run 10 min 52 s (IPv6 stalls, false scans) → foot
+68 s (IPv4) → blue ball 71 s INCLUDING a 29 s cold wide scan; tracked
+steps ~7–8 s each vs ~12–13 s with false scans.
+
 ## 2026-10-30 — Tandem spin now chains a forward step (Adam's call)
 
 Adam: "When thing turns, it has to launch a drive step after it."
