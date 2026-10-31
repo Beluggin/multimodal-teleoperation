@@ -2,6 +2,24 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — First run on the IPv4 fix: "go to the foot", 5 steps in 68 s
+
+Phone launch, launcher --steps 5 --tandem, Claude monitoring the
+timestamped log. No stalls: each look (2 grabs + 2 SAM) ~4.8 s. Area
+0.0046 → 0.030, step-capped, final stop ok. Compare run 2 on the old
+code: 4 steps, 10 min 52 s.
+
+Bug #1 still present on a clean network: the first look after EVERY
+move (steps 2–5) was "lost"; the verification scan found it at its
+FIRST stop (pan 60) each time, so a step costs ~12–13 s instead of ~6.
+Neck was at 53/57 for the misses. Step 3's miss predicted dx ≈ −0.27
+at pan 53, yet the final look at pan 53 FOUND it at dx −0.22, so
+"SERVO_DEG_PER_UNIT is ~2x off" is NOT established. Small target
+(area ~0.009) near the edge of the 33° lens fits as well. Next
+diagnostic (servo-only, needs Adam's OK): fixed object, SAM looks at
+pan 45/53/60 to measure dx per pan unit; and keep the first-look
+frames. Spins of 0.08–0.19 s were issued (bug #3, mostly spin-up).
+
 ## 2026-10-30 — Execution time: ~2 min SAM stalls were IPv6, fixed to IPv4
 
 Cat chase monitored by Claude (desktop launcher, timestamped log
