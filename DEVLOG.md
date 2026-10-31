@@ -2,6 +2,21 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Cat chase with bigger steps: ARRIVED (log), tandem next
+
+Phone "go to the cat" with the 0.40-curve live: forwards of
+1.89 s (area 0.045) and 0.99 s (0.092), a spin correction at
+dx −0.37, 0.77 s forward (0.150), then step 5 aim area 0.265
+→ ARRIVED, stop verified. Much livelier than the ~4in crawl —
+but ARRIVED is the log's claim only; Adam's distance ground
+truth not yet collected, and at 1.3 m this lens already reads
+~0.27 (see FOV entry), so treat as unconfirmed. Next build
+(Step 2, Adam's ask): tandem neck+chassis — when a fresh aim
+demands a turn, split it: camera pans toward PAN_FORWARD while
+the chassis spins the remainder, concurrently, then re-look.
+Today the two move strictly in sequence (recalibrate, re-look,
+then spin), which is where the chase loses time and the cat.
+
 ## 2026-10-30 — Cat chase retest (phone) + way bigger steps
 
 Phone launch "go to the cat" (5 steps, new 33° FOV active):
