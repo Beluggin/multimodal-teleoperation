@@ -2,6 +2,35 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Execution time: ~2 min SAM stalls were IPv6, fixed to IPv4
+
+Cat chase monitored by Claude (desktop launcher, timestamped log
+/tmp/launcher_timed.log; ssh direct to the Pi, NOT via the Muse broker).
+Run 1 went silent after one frame grab (Adam stopped it). Run 2 step 1
+took 2 min 05 s; a drive socket sat in SYN-SENT to Meta's IPv6 address
+(2a03:2880:…). Measured from the desktop: 7/30 IPv6 TCP connects to
+api.meta.ai never answered within 3 s, 0/30 on IPv4 (successful connects
+20–90 ms either way). urllib tries IPv6 first and waits out the full
+120 s timeout before falling back to IPv4, so roughly 4 in 10 looks
+(2 SAM calls each) stalled ~2 min on a stale frame.
+
+Clean path, same run: a scan stop (servo move + 0.8 s settle + 2 grabs
++ 2 SAM) found the cat in 6.1 s, motors on 1.7 s later. Bench parts:
+ssh round trip 0.25 s, qstream grab 0.67–0.93 s, scp 0.30 s, SAM call
+~1.0–1.5 s.
+
+Fix: meta_sam.call_api connects IPv4-only, 5 s connect timeout, up to 3
+tries on fresh sockets; the read timeout stays 120 s. Env-proxied runs
+(Muse broker) keep the old default path. Tests: test_meta_net.py (6,
+red-first); vision suite 80 OK. Live: 6 SAM calls on the cat frame,
+0.99–1.49 s each, no stall.
+
+Bug #1 (post-tandem first look "lost", verification scan finds it):
+in run 2, steps 2 and 3 were each "lost" right after a ~2 min stall and
+then found by the scan within seconds. The stall is the likely cause
+(the target moves, the frame is stale); servo settle is not ruled out.
+Re-test on the fixed code before touching settle time.
+
 ## 2026-10-30 — Left-favour scan live: two cat runs
 
 Run 1: three spinl chassis turns (~180° left of search), scan

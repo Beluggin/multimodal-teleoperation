@@ -17,10 +17,12 @@ response before anyone trusts the geometry downstream.
 
 import argparse
 import base64
+import http.client
 import io
 import json
 import os
 import re
+import socket
 import sys
 import urllib.request
 
@@ -53,14 +55,64 @@ def build_request(image, prompt):
             size)
 
 
+CONNECT_TIMEOUT = 5
+CONNECT_TRIES = 3
+
+
+def connect_ipv4(host, port, timeout, getaddrinfo=socket.getaddrinfo,
+                 sock_factory=socket.socket):
+    """IPv4 TCP connect: short connect timeout, fresh socket per try.
+
+    Measured 2026-10-30 from the desktop: ~1 in 4 IPv6 connects to
+    api.meta.ai never answered SYN (0/30 on IPv4). urllib tried IPv6
+    first and sat out the full read timeout (120 s) before falling
+    back, so a SAM look stalled ~2 min and the target walked off.
+    """
+    addrs = [ai[4] for ai in getaddrinfo(host, port, socket.AF_INET,
+                                         socket.SOCK_STREAM)]
+    last = OSError(f"no IPv4 address for {host}")
+    for _ in range(CONNECT_TRIES):
+        for addr in addrs:
+            s = sock_factory(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(CONNECT_TIMEOUT)
+            try:
+                s.connect(addr)
+            except OSError as e:
+                s.close()
+                last = e
+                continue
+            s.settimeout(timeout)
+            return s
+    raise last
+
+
+class IPv4HTTPSConnection(http.client.HTTPSConnection):
+    def connect(self):
+        sock = connect_ipv4(self.host, self.port, self.timeout)
+        self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
+
+
+class IPv4HTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(IPv4HTTPSConnection, req, context=self._context)
+
+
+def api_opener(proxies=None):
+    """Direct: IPv4 handler. Proxied (the Muse sandbox broker needs env
+    proxies for api.meta.ai): default path, the proxy connects for us."""
+    if proxies is None:
+        proxies = urllib.request.getproxies()
+    if proxies.get("https"):
+        return urllib.request.build_opener()
+    return urllib.request.build_opener(IPv4HTTPSHandler())
+
+
 def call_api(payload, api_key, timeout=120):
     req = urllib.request.Request(
         API_URL, data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json",
                  "Authorization": f"Bearer {api_key}"}, method="POST")
-    # Default opener honours env proxies (the Muse sandbox broker needs
-    # them for api.meta.ai; the Pi/desktop simply have none set).
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with api_opener().open(req, timeout=timeout) as resp:
         return json.loads(resp.read())
 
 
