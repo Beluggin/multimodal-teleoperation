@@ -2,6 +2,17 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Correction: second cat spoiled the scan (not a failure)
+
+The phone "go to the cat" run during the tandem setup scanned,
+FOUND at area 0.319 and declared ARRIVED with the bench listener
+down (stop refused, connection refused — listener's hour had
+expired; it fails safe, motors low, and that run never drove).
+Adam's ground truth: a SECOND cat walked into frame close up
+and the scan locked her instead. Instance confusion by cat, not
+a machine failure. Listener revived 20:48 (pid 98492, ~1 h),
+stop verified. There are two cats. Chases may lock either.
+
 ## 2026-10-30 — Cat chase with bigger steps: ARRIVED (log), tandem next
 
 Phone "go to the cat" with the 0.40-curve live: forwards of
