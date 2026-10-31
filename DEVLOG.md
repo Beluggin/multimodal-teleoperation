@@ -27,9 +27,12 @@ red-first); vision suite 80 OK. Live: 6 SAM calls on the cat frame,
 
 Bug #1 (post-tandem first look "lost", verification scan finds it):
 in run 2, steps 2 and 3 were each "lost" right after a ~2 min stall and
-then found by the scan within seconds. The stall is the likely cause
-(the target moves, the frame is stale); servo settle is not ruled out.
-Re-test on the fixed code before touching settle time.
+then found by the scan within seconds. But step 4 was "lost" with NO
+stall (7.6 s after a 0.75 s forward step, cat at area 0.16), so the
+stall explains some losses, not all. A second cause (servo settle,
+target near/under the camera, instance carry-over) is still open. The
+first-look frame is overwritten by the scan's grabs; keep it before
+the next diagnosis.
 
 ## 2026-10-30 — Left-favour scan live: two cat runs
 
