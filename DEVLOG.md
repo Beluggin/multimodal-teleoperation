@@ -2,6 +2,23 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Tandem live on mug: executes, tracking still loses it
+
+Step 2 live via phone (launcher --tandem, listener revived).
+Run 1: scan FOUND mug (dx +0.374, area 0.016), tandem bearing
++39.9° → neck to pan 53 + spinr 0.36 s from ONE picture, then
+target lost at step 2. Run 2: same find (bearing +37.7°,
+spinr 0.34 s), step 2 residual dx −0.152 (slight overshoot,
+bearing −5.0°), then neck 58 + a 2.47 s forward (area 0.026 —
+the new big-step curve at small area), target lost at step 3.
+So tandem actuation works as designed (one look, concurrent
+neck+chassis, no confirm-look), but post-spin re-acquisition
+and the long blind forward both lose a small target. Likely
+contributors: spin-rate estimate (110°/s nominal) error over
+~40°, and 2.5 s blind steps at far areas. Adam's ground truth
+on spin direction/amount still to collect. Cat not attempted
+under tandem yet.
+
 ## 2026-10-30 — Correction: second cat spoiled the scan (not a failure)
 
 The phone "go to the cat" run during the tandem setup scanned,
