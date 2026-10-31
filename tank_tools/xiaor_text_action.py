@@ -318,6 +318,7 @@ class Action:
     matched: str = ""                  # phrase that fired
     reason: str = ""
     target: str = ""                   # goto only: vision target, e.g. "shoe"
+    targets: List[str] = field(default_factory=list)  # goto: every mission, in order
 
 
 def _no_motion(kind: str, reason: str) -> Action:
@@ -368,6 +369,32 @@ def _clean_target(rest: str) -> Tuple[Optional[str], str]:
     return target, ""
 
 
+_CHAIN_SPLIT = re.compile(r"\s+(?:and\s+)?then\b\s*")
+MAX_CHAIN = 3
+
+
+def _goto_chain(norm: str) -> Optional[List[str]]:
+    """'go to the ball then go to the mug' -> ['ball', 'mug'], else None.
+
+    Every segment must classify as a clean goto on its own (a bare
+    'the mug' after 'then' is read as 'go to the mug'). One non-goto
+    segment — wave, stop, a negation, a drive word — and the whole
+    chain is off, so classify falls through to its normal handling.
+    """
+    parts = _CHAIN_SPLIT.split(norm)
+    if len(parts) < 2 or len(parts) > MAX_CHAIN:
+        return None
+    targets = []
+    for part in parts:
+        a = classify(part)
+        if a.kind != "goto" and part and not _goto_rest(part):
+            a = classify("go to " + part)
+        if a.kind != "goto" or not a.target:
+            return None
+        targets.append(a.target)
+    return targets
+
+
 def classify(text: str) -> Action:
     """Fixed-phrase text → Action. Never raises on weird input; anything it
     can't map cleanly comes back as unknown/refused/ambiguous with NO commands.
@@ -375,6 +402,13 @@ def classify(text: str) -> Action:
     norm = _normalize(text or "")
     if not norm:
         return _no_motion("unknown", "empty input")
+
+    chain = _goto_chain(norm)
+    if chain:
+        return Action(kind="goto", label="goto", target=chain[0],
+                      targets=chain, matched="goto chain",
+                      reason=f"goto chain {' -> '.join(chain)} "
+                             f"(vision loop, one mission at a time)")
 
     # All phrase hits; longest wins overlaps ("kill the lights" beats "kill",
     # "look ahead" beats "ahead"). Same-action overlaps collapse to one.
@@ -417,7 +451,7 @@ def classify(text: str) -> Action:
                 return _no_motion("unknown",
                                   f"no usable target in {text!r} ({why})")
             return Action(kind="goto", label="goto", target=target,
-                          matched="goto",
+                          targets=[target], matched="goto",
                           reason=f"goto target {target!r} "
                                  f"— vision loop required, no motion sent")
         # Only stop/estop matched alongside: fall through, stop wins.

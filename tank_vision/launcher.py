@@ -27,6 +27,21 @@ import time
 
 SSH = ["ssh", "-o", "ConnectTimeout=10", "tank-lan"]
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tank_tools"))
+import xiaor_text_action as _xta  # noqa: E402
+
+
+def mission_texts(text):
+    """'go to the ball then go to the mug' -> one goto text per mission.
+
+    A single goto (or anything the parser does not chain) comes back
+    unchanged as one mission; drive_run still gates it with its own
+    goto check, so nothing here widens what can move.
+    """
+    targets = _xta.classify(text or "").targets
+    if len(targets) < 2:
+        return [text]
+    return [f"go to the {t}" for t in targets]
 
 
 def parse_pi_output(raw):
@@ -97,8 +112,20 @@ class Launcher:
             return False
         self._pi("POST", "/api/launch/report",
                  {"state": "running", "detail": "drive starting"})
-        state, detail = self._run_drive(
-            job["text"], self._steps, self._fast, self._stop_requested)
+        missions = mission_texts(job["text"])
+        for i, text in enumerate(missions, 1):
+            if len(missions) > 1:
+                print(f"launcher: mission {i}/{len(missions)}: {text!r}",
+                      flush=True)
+                self._pi("POST", "/api/launch/report",
+                         {"state": "running",
+                          "detail": f"mission {i}/{len(missions)}: {text}"})
+            state, detail = self._run_drive(
+                text, self._steps, self._fast, self._stop_requested)
+            if state != "done":
+                break
+        if len(missions) > 1:
+            detail = f"mission {i}/{len(missions)} {state}: {detail}"
         self._pi("POST", "/api/launch/report",
                  {"state": state, "detail": detail})
         return True

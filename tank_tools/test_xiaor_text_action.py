@@ -174,6 +174,40 @@ class ClassifyGoto(unittest.TestCase):
         self.assertEqual(a.kind, "unknown")
         self.assertEqual(a.commands, [])
 
+    def test_goto_chain(self):
+        # Adam 2026-10-30: chained missions, every segment a clean goto.
+        for text, targets in (
+                ("go to the blue ball then go to the mug",
+                 ["blue ball", "mug"]),
+                ("go to the blue ball, then the mug", ["blue ball", "mug"]),
+                ("go to the ball and then go to the mug", ["ball", "mug"]),
+                ("check out the cat then go get the shoe then go to the mug",
+                 ["cat", "shoe", "mug"])):
+            with self.subTest(text=text):
+                a = classify(text)
+                self.assertEqual(a.kind, "goto")
+                self.assertEqual(a.targets, targets)
+                self.assertEqual(a.target, targets[0])
+                self.assertEqual(a.commands, [])
+
+    def test_single_goto_has_one_target(self):
+        self.assertEqual(classify("go to the mug").targets, ["mug"])
+
+    def test_goto_chain_safety(self):
+        # Any non-goto segment keeps the whole chain off: fail closed.
+        for text in ("go to the mug then wave",
+                     "go to the mug then stop",
+                     "don't go to the ball then go to the mug",
+                     "go to the ball then go to the left",
+                     "go to the ball then",
+                     "go to a then go to b then go to c then go to d"):
+            with self.subTest(text=text):
+                a = classify(text)
+                self.assertNotEqual(a.kind, "goto")
+                self.assertEqual(a.targets, [])
+        self.assertEqual(classify("go to the mug then stop").label,
+                         "drive.stop")
+
     def test_goto_synonyms(self):
         # Speech-friendly ways to say "go look at the thing": all must
         # route to the same no-motion goto with the target extracted.

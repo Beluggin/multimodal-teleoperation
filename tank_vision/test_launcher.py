@@ -87,5 +87,49 @@ class PollOnce(unittest.TestCase):
         self.assertEqual(pi.launch["state"], "stopped")
 
 
+class Chain(unittest.TestCase):
+    def chain_pi(self, text):
+        pi = FakePi()
+        pi.launch["text"] = text
+        return pi
+
+    def test_chain_runs_each_mission_in_order(self):
+        pi = self.chain_pi("go to the blue ball then go to the mug")
+        texts = []
+
+        def run_drive(text, steps, fast, should_stop):
+            texts.append(text)
+            return "done", "ARRIVED"
+
+        self.assertTrue(Launcher(pi, run_drive).poll_once())
+        self.assertEqual(texts, ["go to the blue ball", "go to the mug"])
+        self.assertEqual(pi.launch["state"], "done")
+        self.assertIn("2/2", pi.reports[-1]["detail"])
+
+    def test_failed_mission_ends_the_chain(self):
+        pi = self.chain_pi("go to the cat then go to the mug")
+        texts = []
+
+        def run_drive(text, steps, fast, should_stop):
+            texts.append(text)
+            return "failed", "target lost"
+
+        Launcher(pi, run_drive).poll_once()
+        self.assertEqual(texts, ["go to the cat"])
+        self.assertEqual(pi.launch["state"], "failed")
+
+    def test_stop_ends_the_chain(self):
+        pi = self.chain_pi("go to the cat then go to the mug")
+        texts = []
+
+        def run_drive(text, steps, fast, should_stop):
+            texts.append(text)
+            return "stopped", "stop requested from the page"
+
+        Launcher(pi, run_drive).poll_once()
+        self.assertEqual(texts, ["go to the cat"])
+        self.assertEqual(pi.launch["state"], "stopped")
+
+
 if __name__ == "__main__":
     unittest.main()
