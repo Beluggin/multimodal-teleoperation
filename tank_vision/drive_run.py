@@ -105,12 +105,14 @@ SCAN_TURN_DEG = 60.0   # chassis turn between neck scans (step 1):
 
 
 def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
-                 spin="spinr", duty=30):
+                 spin="spinl", duty=30):
     """Step 1: neck scan; on failure spin the chassis and rescan.
 
-    Defaults favour `spinr`: Adam's pan is asymmetric (~50 deg one
-    side of chassis-forward, ~30 the other), and the long side is
-    the productive search direction. Each turn is one bounded spin
+    Defaults favour `spinl` (Adam, 2026-10-30): the neck is
+    handicapped to the left of PAN_FORWARD — only 22 servo units
+    of travel that side vs 53 right — so when the neck sweep has
+    covered all it can, the CHASSIS turns left to search the side
+    the camera cannot reach well. Each turn is one bounded spin
     (~60 deg at the measured spin rate); a failed spin aborts the
     search. Returns an aim or None (fail closed, no drive).
     """
@@ -243,9 +245,10 @@ def main(argv=None):
                     help="step 1: chassis turns between neck scans "
                          "when the target starts out of frame")
     ap.add_argument("--scan-spin", choices=("spinr", "spinl"),
-                    default="spinr",
-                    help="chassis-scan turn direction (default spinr: "
-                         "the camera's long side)")
+                    default="spinl",
+                    help="chassis-scan turn direction (default spinl: "
+                         "the neck's handicapped side, only 22 units "
+                         "of pan travel left of forward)")
     ap.add_argument("--tandem", action="store_true",
                     help="step 2: neck + chassis concurrently from one "
                          "picture (no recalibrate confirm-look); "

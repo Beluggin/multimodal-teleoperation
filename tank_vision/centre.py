@@ -21,8 +21,10 @@ FOV_V_DEG = 25.0
 # the ch6 angle where the camera looks along the chassis centreline.
 # Pan travel from straight is asymmetric — 22 servo units to the
 # 75 limit on the view-left side, 53 units to the 0 limit on the
-# view-right side (~30/50 physical degrees). Searches and spins
-# should favour view-right; a saturated pan near 75 means the neck
+# view-right side (~30/50 physical degrees). The neck covers the
+# right well on its own, so CHASSIS scan turns favour LEFT
+# (Adam, 2026-10-30): the body searches the handicapped side the
+# camera cannot. A saturated pan near 75 likewise means the neck
 # has almost no left travel left and the body must spin.
 PAN_FORWARD = 53
 

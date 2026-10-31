@@ -105,7 +105,7 @@ class TandemMove(unittest.TestCase):
 
 
 class ChassisScan(unittest.TestCase):
-    def test_turns_toward_long_side_and_rescans_until_found(self):
+    def test_turns_toward_handicapped_left_and_rescans_until_found(self):
         scans, drives = [], []
 
         def scan(prompt):
@@ -116,8 +116,10 @@ class ChassisScan(unittest.TestCase):
                            drive_fn=drives.append, max_turns=3)
         self.assertEqual(aim, {"dx_right": 0.1})
         self.assertEqual(scans, ["mug"] * 3)
-        # ~60 deg at the measured 110 deg/s spin rate, to the right.
-        self.assertEqual(drives, ["spinr 0.55 30", "spinr 0.55 30"])
+        # Default favours LEFT: the neck has only 22 units of travel
+        # that side of PAN_FORWARD (Adam, 2026-10-30), so the chassis
+        # turns left to cover the handicapped side. ~60 deg at 110/s.
+        self.assertEqual(drives, ["spinl 0.55 30", "spinl 0.55 30"])
 
     def test_failed_spin_aborts_search(self):
         scans = []
@@ -136,8 +138,8 @@ class ChassisScan(unittest.TestCase):
     def test_spin_direction_is_configurable(self):
         drives = []
         chassis_scan("mug", scan_fn=lambda p: None,
-                     drive_fn=drives.append, max_turns=1, spin="spinl")
-        self.assertEqual(drives, ["spinl 0.55 30"])
+                     drive_fn=drives.append, max_turns=1, spin="spinr")
+        self.assertEqual(drives, ["spinr 0.55 30"])
 
 
 class DampedSpin(unittest.TestCase):
