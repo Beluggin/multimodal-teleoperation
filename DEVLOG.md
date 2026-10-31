@@ -2,6 +2,34 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-31 — Codex review of changes through 49225ae
+
+Read-only runtime review of bb31595..49225ae while Claude continues work;
+HEAD stayed at 49225ae and the working tree was clean during checks.
+The false tandem-loss guard is fixed. Reviewed measured pan calibration,
+alternating neck/chassis sweeps, chained missions, spin-follow drive,
+bottom-clip arrival, arrival confirmation, and reverse-first recovery.
+
+Two confirmed completion defects remain (no fixes made in this review):
+- recover_after_loss returns arrived=True for ANY detection after reverse.
+  Fully mocked main(): far aim (area 0.01, y_bottom 0.55), forward, loss,
+  same far aim after reverse -> ARRIVED / exit 0, although arrived(aim)
+  is False. Reacquisition should return to approach/arrival validation;
+  visibility alone does not establish arrival or identity continuity.
+- Step-cap fallthrough returns 0 even when the final look is None.
+  Fully mocked one-step main() reproduced final aim=None / exit 0.
+  Launcher chains advance on this success code, so exhaustion can skip
+  an unfinished target. Arrival confirmation on the last step also falls
+  through to this unchecked result. Distinguish reached from incomplete.
+
+Offline checks: vision 106 run (105 passed, 1 skipped), parser 44 passed,
+roundtable 6 passed. No hardware/hosted API calls. Phone and speech suites
+were not rerun in this pass (their source/tests unchanged in this range).
+Existing tests cover recovery/arrival helpers but lack main-loop coverage
+for these outcomes. Add those regressions with the fixes. The previously
+reported parent-launcher interruption/child-cleanup issue also remains.
+Only this review entry was written; code and HANDOFF left to active work.
+
 ## 2026-10-30 — Codex offline repository review
 
 Reviewed clean working tree at bb31595, drive/recovery control flow,

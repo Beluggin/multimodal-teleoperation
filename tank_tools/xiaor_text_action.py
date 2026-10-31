@@ -331,7 +331,8 @@ def _no_motion(kind: str, reason: str) -> Action:
 # Bare "check"/"look" are deliberately NOT verbs here — "check the
 # sensors" is a query and "look left" is a camera move.
 _GOTO_REST = re.compile(
-    r"\b(?:go\s+(?:to|get|find|fetch)|drive\s+to|head\s+to|get|fetch|find"
+    r"\b(?:go\s+(?:to|get|find|fetch|chase)|drive\s+to|head\s+to|get|fetch"
+    r"|find|chase"
     r"|investigate|examine|inspect|check\s+out"
     r"|take\s+a\s+look\s+at|have\s+a\s+look\s+at|go\s+look\s+at|look\s+at"
     r"|go\s+(?:investigate|examine|inspect))"
@@ -387,8 +388,9 @@ def _goto_chain(norm: str) -> Optional[List[str]]:
     targets = []
     for part in parts:
         a = classify(part)
-        if a.kind != "goto" and part and not _goto_rest(part):
-            a = classify("go to " + part)
+        if (a.kind != "goto" and part and not _goto_rest(part)
+                and part.split()[0] in _GOTO_DETERMINERS):
+            a = classify("go to " + part)   # "...then the mug"
         if a.kind != "goto" or not a.target:
             return None
         targets.append(a.target)

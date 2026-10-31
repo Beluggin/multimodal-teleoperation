@@ -190,6 +190,32 @@ class ClassifyGoto(unittest.TestCase):
                 self.assertEqual(a.target, targets[0])
                 self.assertEqual(a.commands, [])
 
+    def test_chase_is_a_goto(self):
+        # Adam 2026-10-31: "chase the cat. It's worth it."
+        for text in ("chase the cat", "go chase the cat",
+                     "chase the cat now"):
+            with self.subTest(text=text):
+                a = classify(text)
+                self.assertEqual(a.kind, "goto")
+                self.assertEqual(a.target, "cat")
+                self.assertEqual(a.commands, [])
+        self.assertEqual(classify("don't chase the cat").kind, "refused")
+        self.assertEqual(classify("chase the cat then go to the mug").targets,
+                         ["cat", "mug"])
+
+    def test_chain_bare_segment_must_look_like_a_noun(self):
+        # A verbless segment is read as 'go to <it>' only when it starts
+        # with a determiner ("then the mug"); unknown verbs never become
+        # targets ("dance then go to the mug" was chaining to "dance").
+        self.assertEqual(classify("go to the ball then the mug").targets,
+                         ["ball", "mug"])
+        # (The single-goto parser ignores words BEFORE the verb, as it
+        # always has: "dance then go to the mug" -> mug, never "dance".)
+        self.assertEqual(classify("dance then go to the mug").targets,
+                         ["mug"])
+        self.assertNotEqual(classify("go to the mug then dance").kind,
+                            "goto")
+
     def test_single_goto_has_one_target(self):
         self.assertEqual(classify("go to the mug").targets, ["mug"])
 
