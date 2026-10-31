@@ -2,6 +2,20 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — Beer run spun ~230° the wrong way (pre-fix code)
+
+Phone "go to the beer": neck scan missed, then THREE chassis
+turns spinr 0.55 s (~60° each, ~180° total; Adam read it as
+~230° with the neck offset) and never found it — fail-closed
+stop verified. Ground truth: beer was the other way. Timing
+note: this launch started BEFORE the left-favour commit
+(b444a04) landed, so its drive_run subprocess still had the
+old spinr default. Left-favour (chassis turns spinl, covering
+the neck's 22-unit handicapped side) applies from the next
+launch. Prompt "beer" also never got a single SAM hit in 4
+neck sweeps (48 looks) — either out of all arcs covered or
+the word does not match the object (can/bottle to test).
+
 ## 2026-10-30 — "Dungeon Crawler Carl": found, 60 cm short, cats intrude
 
 Phone launch, prompt "dungeon crawler carl" (the book). Wide
