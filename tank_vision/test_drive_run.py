@@ -237,6 +237,49 @@ class BottomClip(unittest.TestCase):
         self.assertEqual(calls, [f"rev {drive_run.REVERSE_SECS:g} 30 17"])
 
 
+class ArrivalConfirm(unittest.TestCase):
+    """Chain 5 mug: ARRIVED with only the NECK on it (pan 28), the
+    chassis unturned, ~1 ft short (Adam). Arrival must face + aim first."""
+
+    def plan(self, aim, pan, tilt):
+        from tank_vision.centre import tandem_plan
+        return tandem_plan(aim, pan, tilt, (0, 75), (20, 120))
+
+    def test_neck_only_arrival_needs_confirm(self):
+        mug = {"dx_right": 0.078, "dy_up": -0.271, "area_frac": 0.183,
+               "y_bottom": 1.0}
+        plan = self.plan(mug, pan=28, tilt=41)
+        self.assertEqual(plan["action"], "spin")     # not facing it
+        self.assertTrue(drive_run.needs_arrival_confirm(plan, tilt=41))
+
+    def test_facing_clip_that_can_tilt_lower_needs_confirm(self):
+        aim = {"dx_right": 0.0, "dy_up": -0.3, "area_frac": 0.12,
+               "y_bottom": 1.0}
+        plan = self.plan(aim, pan=53, tilt=41)
+        self.assertEqual(plan["action"], "forward")
+        self.assertTrue(drive_run.needs_arrival_confirm(plan, tilt=41))
+
+    def test_facing_and_aimed_is_arrived(self):
+        aim = {"dx_right": 0.02, "dy_up": -0.02, "area_frac": 0.3,
+               "y_bottom": 0.9}
+        plan = self.plan(aim, pan=53, tilt=30)
+        self.assertFalse(drive_run.needs_arrival_confirm(plan, tilt=30))
+
+    def test_tilt_at_floor_trusts_the_clip(self):
+        aim = {"dx_right": 0.0, "dy_up": -0.45, "area_frac": 0.01,
+               "y_bottom": 1.0}
+        plan = self.plan(aim, pan=53, tilt=20)        # can't look lower
+        self.assertFalse(drive_run.needs_arrival_confirm(plan, tilt=20))
+
+    def test_tandem_can_move_neck_without_motor(self):
+        calls = []
+        drive_run.run_tandem(
+            {"pan": 53, "tilt": 30}, None,
+            servo_fn=lambda p, t: calls.append(("servo", p, t)) or True,
+            drive_fn=lambda c: calls.append(("motor", c)))
+        self.assertEqual(calls, [("servo", 53, 30)])
+
+
 class RecogniseBox(unittest.TestCase):
     def test_aim_carries_box_bottom(self):
         from tank_vision import centre_run

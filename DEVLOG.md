@@ -35,6 +35,20 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-31 — Arrival confirm: face it and aim down before ARRIVED
+
+An arrived aim (area > 0.25 or bottom-clipped) in tandem mode now gets
+ONE confirm when needs_arrival_confirm(plan, tilt): the chassis isn't
+facing it (tandem plan = spin, bearing > 5°) or the camera can still
+tilt down onto it. The confirm is the tandem move WITHOUT a forward
+step (spin if needed + neck to plan pan/tilt; run_tandem accepts
+motor_cmd=None), then the next look decides: still arrived → ARRIVED;
+otherwise the loop drives on (a tall mug a foot off now sits fully in
+frame). Tilt at its floor trusts the clip (the ball case). A non-arrived
+aim resets the check. Tests: 5 red-first (mug neck-only case,
+facing+can tilt, aimed = arrived, tilt floor, neck-only tandem);
+vision 105. The main-loop wiring is not unit-tested; NOT live-tested.
+
 ## 2026-10-31 — CHAIN COMPLETE: blue ball → mug in 67 s (both sweeps live)
 
 Chain 5, "go to the blue ball then go to the mug", mug placed off to
@@ -51,7 +65,13 @@ the right (where chain 4's always-left search never looked). 00:41:37
 Live-proven: Adam's outward neck sweep (3 stops a row, not 6), the
 bottom-clip arrival (twice), the spin→drive chain, the chain handover.
 No chassis turn was needed this time, so the alternating chassis turns
-are still unproven live. Remaining waste: the short-spin undershoot
+are still unproven live.
+
+Adam's ground truth: the ball was reached; the MUG was ~1 ft short,
+and "not chassised at it… just camera." The mug ARRIVED from a sweep
+stop at pan 28 (neck ~21° right of the nose), level tilt 41, area 0.18
+with the box on the frame bottom: tall object + unaimed camera + an
+unturned chassis. Fix (next entry): arrival confirm. Remaining waste: the short-spin undershoot
 (0.44 s for 48°) cost one loss + sweep.
 
 ## 2026-10-31 — Chassis turns alternate too (L60, R120, L180)

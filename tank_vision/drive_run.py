@@ -163,6 +163,18 @@ def arrived(aim):
     return aim["area_frac"] > ARRIVE_AREA or bottom_clipped(aim)
 
 
+def needs_arrival_confirm(plan, tilt):
+    """An 'arrived' aim earns one face-and-aim move before ARRIVED.
+
+    Chain 5 (2026-10-31): the mug read arrived from a sweep stop with
+    only the NECK on it (pan 28, ~21 deg off the nose) at a level tilt;
+    the chassis never turned and it stopped ~1 ft short (Adam). Confirm
+    when the chassis isn't facing it (plan spins) or the camera can
+    still tilt down onto it; the next look then decides.
+    """
+    return plan["action"] == "spin" or plan["tilt"] < int(tilt) - 1
+
+
 LOST_WIDE_SCAN = chassis_scan
 REVERSE_SECS = 0.5
 
@@ -230,8 +242,9 @@ def run_tandem(plan, motor_cmd, servo_fn=None, drive_fn=None):
         except Exception as e:
             errors.append(e)
 
-    threads = [threading.Thread(target=do_servo),
-               threading.Thread(target=do_motor)]
+    threads = [threading.Thread(target=do_servo)]
+    if motor_cmd is not None:   # None: neck-only (arrival confirm)
+        threads.append(threading.Thread(target=do_motor))
     for t in threads:
         t.start()
     for t in threads:
@@ -343,6 +356,7 @@ def main(argv=None):
     tracker = FastTracker(VisionPipeline()) if args.fast else None
     prev_aim, blind_used = None, False
     tandem_recovered = False
+    arrival_checked = False
     try:
         for step in range(1, args.steps + 1):
             if tracker is not None and tracker.locked:
@@ -427,11 +441,32 @@ def main(argv=None):
             prev = (aim["dx_right"] + 0.5, 0.5 - aim["dy_up"])
             prev_aim, blind_used = aim, False
             print(f"step {step}: aim={aim}")
+            if arrived(aim) and args.tandem and tracker is None \
+                    and not arrival_checked:
+                st = api("/api/servo")
+                plan = tandem_plan(
+                    aim, st["state"]["6"], st["state"]["5"],
+                    (st["limits"]["6"][0], st["limits"]["6"][1]),
+                    (st["limits"]["5"][0], st["limits"]["5"][1])) \
+                    if st.get("enabled") else None
+                if plan is not None and needs_arrival_confirm(
+                        plan, st["state"]["5"]):
+                    arrival_checked = True
+                    cmd = (tandem_motor_cmd(plan, aim, args)[0]
+                           if plan["action"] == "spin" else None)
+                    print(f"  arrival check: bearing "
+                          f"{plan['bearing_deg']:+.1f} deg -> neck pan "
+                          f"{plan['pan']} tilt {plan['tilt']}"
+                          f"{' + ' + repr(cmd) if cmd else ''}, then look")
+                    run_tandem(plan, cmd)
+                    time.sleep(1.2)
+                    continue
             if arrived(aim):
                 why = ("box on the frame bottom" if bottom_clipped(aim)
                        else f"area {aim['area_frac']:.2f} > {ARRIVE_AREA}")
                 print(f"ARRIVED ({why})")
                 return 0
+            arrival_checked = False   # not arrived: a later one re-checks
             if args.tandem and tracker is None:
                 # Step 2: plan neck + chassis from THIS picture and
                 # move both at once. No confirm-look in between.
