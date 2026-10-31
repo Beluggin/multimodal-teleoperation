@@ -35,6 +35,23 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-31 — Bottom-clipped box = arrived (chain 3 pushed the ball)
+
+Chain 3 (loss ladder live): ball seen at look 1; go 2.5 s, go 2.26 s,
+step 3 area 0.076 at dy −0.41 — Adam: within ~4 in, "Oh it's
+perfect!" — then spin + go 1.46 s; step 4 the ball was a bottom-edge
+sliver (area 0.0099, dy −0.48), read as FAR → go 2.5 s, pushed the
+ball. Step 5 lost; the ladder skipped the reverse (sliver area < 0.08)
+and went to the chassis-assisted scan (tilt already at its floor, one
+row); Adam stopped it.
+
+Fix: recognise() now carries the box bottom edge (y_bottom); arrived(aim)
+= area > 0.25 OR box bottom >= 0.97 (target runs off the frame bottom).
+Tandem re-aims tilt every step, so bottom clipping means near, not
+small. Ladder also reverses when the last sighting was bottom-clipped.
+Step 3 of chain 3 would now have stopped at Adam's "perfect" spot.
+Tests: 6 red-first; vision 98. NOT yet live-tested.
+
 ## 2026-10-31 — Chained missions live; loss ladder (reverse, then chassis scan)
 
 Chained missions (6dd419d): "go to the blue ball then go to the mug".

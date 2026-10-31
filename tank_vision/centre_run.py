@@ -79,7 +79,10 @@ def recognise(path, prompt, prev_centroid=None):
         cx, cy = (mb["x0"] + mb["x1"]) / 2, (mb["y0"] + mb["y1"]) / 2
         aim = {"dx_right": round(cx - 0.5, 4),
                "dy_up": round(0.5 - cy, 4),
-               "area_frac": s["area_frac"]}
+               "area_frac": s["area_frac"],
+               # Box bottom edge: clipped at the frame bottom = close,
+               # whatever the visible area says (drive_run.arrived).
+               "y_bottom": round(mb["y1"], 4)}
         cands.append((aim, s))
     if not cands:
         return None, None

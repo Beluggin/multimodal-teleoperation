@@ -195,6 +195,57 @@ class DampedSpin(unittest.TestCase):
             self.assertLessEqual(secs, 0.5)
 
 
+class BottomClip(unittest.TestCase):
+    """2026-10-31 ball run: box on the bottom edge = close, not far."""
+    # Step 3 of chain 3: Adam saw it ~4 in away ("perfect"), area only
+    # 0.076; step 4 the ball was a sliver (area 0.0099) at dy -0.48.
+    PERFECT = {"dx_right": -0.2, "dy_up": -0.405, "area_frac": 0.0755,
+               "y_bottom": 0.995}
+    SLIVER = {"dx_right": -0.07, "dy_up": -0.48, "area_frac": 0.0099,
+              "y_bottom": 1.0}
+    FAR = {"dx_right": 0.1, "dy_up": 0.22, "area_frac": 0.03,
+           "y_bottom": 0.80}
+
+    def test_bottom_clipped_target_has_arrived(self):
+        self.assertTrue(drive_run.arrived(self.PERFECT))
+        self.assertTrue(drive_run.arrived(self.SLIVER))
+
+    def test_far_target_has_not_arrived(self):
+        self.assertFalse(drive_run.arrived(self.FAR))
+        self.assertFalse(drive_run.arrived(
+            {"dx_right": 0, "dy_up": 0, "area_frac": 0.1}))  # no box edge
+
+    def test_big_target_still_arrives_by_area(self):
+        self.assertTrue(drive_run.arrived(
+            {"dx_right": 0, "dy_up": 0, "area_frac": 0.3}))
+
+    def test_sliver_loss_reverses(self):
+        calls = []
+        drive_run.recover_after_loss(
+            self.SLIVER, look_fn=lambda: None,
+            drive_fn=lambda c: calls.append(c), wide_fn=lambda: None,
+            duty=30, trim=17)
+        self.assertEqual(calls, [f"rev {drive_run.REVERSE_SECS:g} 30 17"])
+
+
+class RecogniseBox(unittest.TestCase):
+    def test_aim_carries_box_bottom(self):
+        from tank_vision import centre_run
+
+        class Obj:
+            def summary(self):
+                return {"empty": False, "area_frac": 0.05,
+                        "mask_box": {"x0": 0.4, "y0": 0.8,
+                                     "x1": 0.6, "y1": 1.0}}
+        real = centre_run.segment_text
+        centre_run.segment_text = lambda path, prompt: ([Obj()], {})
+        try:
+            aim, _ = centre_run.recognise("x.jpg", "ball")
+        finally:
+            centre_run.segment_text = real
+        self.assertEqual(aim["y_bottom"], 1.0)
+
+
 class LostRecovery(unittest.TestCase):
     """Tandem loss ladder: close -> reverse+look, then chassis-assisted scan."""
     CLOSE = {"dx_right": -0.30, "dy_up": -0.23, "area_frac": 0.186}

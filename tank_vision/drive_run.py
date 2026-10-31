@@ -52,6 +52,7 @@ def resolve_prompt(text):
 SSH = ["ssh", "-o", "ConnectTimeout=10", "tank-lan"]
 SPIN_DEG_PER_SEC = 110.0  # measured ~101-135 at 30%; mid value, loop corrects
 ARRIVE_AREA = 0.25
+BOTTOM_CLIP = 0.97    # box bottom past this = target runs off the frame bottom
 STEP_MIN_SECS = 0.5   # near the target: shortest, safest step
 STEP_MAX_SECS = 2.5   # far away: longest blind step (listener caps 3 s);
                       # raised from 1.5 on Adam's call — ~4 in per old
@@ -136,6 +137,22 @@ def chassis_scan(prompt, scan_fn=None, drive_fn=None, max_turns=3,
                             max_turns=max_turns)
 
 
+def bottom_clipped(aim):
+    return aim.get("y_bottom", 0.0) >= BOTTOM_CLIP
+
+
+def arrived(aim):
+    """Close enough to stop.
+
+    Area alone is size-blind: chain 3 (2026-10-31) reached the ball at
+    ~4 in with area 0.076 (Adam: "perfect"), drove on, then read the
+    bottom-edge sliver (0.0099) as FAR and pushed the ball. Tandem
+    re-aims tilt every step, so a box running off the frame bottom
+    means the target is near, not small.
+    """
+    return aim["area_frac"] > ARRIVE_AREA or bottom_clipped(aim)
+
+
 LOST_WIDE_SCAN = chassis_scan
 REVERSE_SECS = 0.5
 
@@ -152,7 +169,8 @@ def recover_after_loss(prev_aim, look_fn, drive_fn, wide_fn, duty, trim):
        which recovery previously skipped (neck only).
     3. Nothing: (None, False); the caller stops (fail closed).
     """
-    if prev_aim is not None and prev_aim["area_frac"] >= UNDER_AREA:
+    if prev_aim is not None and (prev_aim["area_frac"] >= UNDER_AREA
+                                 or bottom_clipped(prev_aim)):
         print(f"  lost close (area {prev_aim['area_frac']:.3f}) — "
               f"reverse {REVERSE_SECS:g}s and look")
         drive_fn(f"rev {REVERSE_SECS:g} {duty} {trim}")
@@ -399,8 +417,10 @@ def main(argv=None):
             prev = (aim["dx_right"] + 0.5, 0.5 - aim["dy_up"])
             prev_aim, blind_used = aim, False
             print(f"step {step}: aim={aim}")
-            if aim["area_frac"] > ARRIVE_AREA:
-                print(f"ARRIVED (area {aim['area_frac']:.2f} > {ARRIVE_AREA})")
+            if arrived(aim):
+                why = ("box on the frame bottom" if bottom_clipped(aim)
+                       else f"area {aim['area_frac']:.2f} > {ARRIVE_AREA}")
+                print(f"ARRIVED ({why})")
                 return 0
             if args.tandem and tracker is None:
                 # Step 2: plan neck + chassis from THIS picture and
