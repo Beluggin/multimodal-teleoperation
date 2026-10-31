@@ -2,6 +2,23 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-10-30 — FOV measured with a helper's feet: 33° (was assumed 60°)
+
+Cat chase by phone ("go to the cat") declared ARRIVED at step 1
+with no drive: cat area 0.267 at what Adam measured as ~1.3 m.
+No zoom exists on this camera (v4l2: no zoom/crop control; only
+640x480/320x240) — the lens is just narrow. Measured it with
+a helper standing at 185 cm, feet centres exactly 50 cm apart:
+SAM boxes x 0.414–0.503 and 0.878–0.959 (centres 0.459/0.919)
+→ H_FOV 32.7°, V_FOV 24.8° (square pixels), frame width at
+185 cm ≈ 109 cm. centre.py now uses 33x25 (was 60x45), and the
+scan step drops 30→15 servo units (was a full old-FOV apart —
+gap-prone; now ~half the real FOV). Vision 68 green. This also
+means every dx→degrees conversion was overstated ~1.8x, a
+likely contributor to recalibration overshoot/sign flips.
+Chassis-scan turn widened 40→60° in the same session (bc56df9,
+Adam: "we need a wider turn base") — ~20° leg overlap remains.
+
 ## 2026-10-30 — Voice launches, Step 1 chassis scan live, pan calibrated
 
 Voice session (Adam timing, Muse monitoring only): "Go to the
