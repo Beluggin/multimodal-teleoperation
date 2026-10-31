@@ -48,6 +48,10 @@ Step 1: not in frame → wide scan, found at pan 60 on the 5th stop
   step 5  real loss (ball low, dy −0.14 at 0.08, under camera) →
           verification scan, first stop: area 0.264 → ARRIVED, stop ok
 
+Adam's ground truth: ARRIVED stopped ~8" short of the ball ("the
+speed was next level"). Bug #2 again: area 0.25 is size-blind — a
+small ball fills a quarter of the narrow 33° frame from 8" away.
+
 Bug #1 fix proven: steps 2–4 went straight to aim, no false "lost";
 the only scan was a genuine loss, which is what recovery is for.
 Spin→drive chain proven: every spin followed by a capped go.
