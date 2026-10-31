@@ -50,7 +50,9 @@ SSH = ["ssh", "-o", "ConnectTimeout=10", "tank-lan"]
 SPIN_DEG_PER_SEC = 110.0  # measured ~101-135 at 30%; mid value, loop corrects
 ARRIVE_AREA = 0.25
 STEP_MIN_SECS = 0.5   # near the target: shortest, safest step
-STEP_MAX_SECS = 1.5   # far away: longest blind step (listener caps 3 s)
+STEP_MAX_SECS = 2.5   # far away: longest blind step (listener caps 3 s);
+                      # raised from 1.5 on Adam's call — ~4 in per old
+                      # step at cat distance was far too timid
 
 
 SPIN_MIN_SECS = 0.07
@@ -79,17 +81,17 @@ def spin_secs_for_dx(dx_right, last_dx=None, last_secs=None):
 
 def step_secs_for_area(area_frac):
     """Forward step length from target size. Apparent linear size scales
-    with sqrt(area), so step ~ 0.25/sqrt(area): 0.5 s at arrival area,
-    1.0 s at quarter area, capped both ends. Above 0.08 the step shrinks
-    harder (x0.75): near the target the old curve still spent ~0.8 s
-    blind per step. Garbage in -> shortest step."""
+    with sqrt(area), so step ~ 0.40/sqrt(area): 0.6 s at arrival area,
+    1.6 s at quarter area, capped both ends (2.5 s far, 0.5 s near).
+    Above 0.08 the step shrinks harder (x0.75): near the target even
+    the bigger curve must stay cautious blind. Garbage in -> shortest."""
     try:
         area = float(area_frac)
     except (TypeError, ValueError):
         return STEP_MIN_SECS
     if area <= 0:
         return STEP_MIN_SECS
-    secs = 0.25 / area ** 0.5
+    secs = 0.40 / area ** 0.5
     if area > 0.08:
         secs *= 0.75
     return min(STEP_MAX_SECS, max(STEP_MIN_SECS, secs))

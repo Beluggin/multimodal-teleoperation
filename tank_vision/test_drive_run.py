@@ -33,8 +33,12 @@ class ResolvePrompt(unittest.TestCase):
 class AdaptiveStep(unittest.TestCase):
     def test_far_target_takes_long_step_near_takes_short(self):
         # Distance scales with 1/sqrt(area): quarter area = twice as far.
-        self.assertAlmostEqual(step_secs_for_area(0.25), 0.5)
-        self.assertAlmostEqual(step_secs_for_area(0.0625), 1.0)
+        # Bigger-steps curve (Adam 2026-10-30: ~4in per old step was
+        # too timid): 0.40/sqrt(area), cap raised 1.5 -> 2.5 s.
+        self.assertAlmostEqual(step_secs_for_area(0.25), 0.6)
+        self.assertAlmostEqual(step_secs_for_area(0.0625), 1.6)
+        self.assertAlmostEqual(step_secs_for_area(0.01),
+                               drive_run.STEP_MAX_SECS)
 
     def test_step_always_within_bounds(self):
         for area in (0.001, 0.01, 0.05, 0.1, 0.2, 0.24, 0.5, 1.0):
@@ -50,13 +54,13 @@ class AdaptiveStep(unittest.TestCase):
 
     def test_step_shrinks_harder_above_008(self):
         # Near the target the blind step must drop faster than the
-        # plain 0.25/sqrt(area) curve, but never below the floor.
-        plain = 0.25 / 0.10 ** 0.5
+        # plain 0.40/sqrt(area) curve, but never below the floor.
+        plain = 0.40 / 0.10 ** 0.5
         self.assertLess(step_secs_for_area(0.10), plain)
         self.assertGreaterEqual(step_secs_for_area(0.10),
                                 drive_run.STEP_MIN_SECS)
-        # Below the threshold the proven curve is unchanged.
-        self.assertAlmostEqual(step_secs_for_area(0.0625), 1.0)
+        # Below the threshold the plain curve applies.
+        self.assertAlmostEqual(step_secs_for_area(0.0625), 1.6)
 
     def test_garbage_area_falls_back_to_shortest_step(self):
         for area in (0, -1, None):
