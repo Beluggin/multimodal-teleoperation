@@ -80,6 +80,28 @@ class TandemMove(unittest.TestCase):
         self.assertFalse(drive_run.should_tandem_recover(
             tandem=True, has_prev=False, recovered=False, found=False))
 
+    def test_spin_is_followed_by_a_capped_forward_step(self):
+        # Adam 2026-10-30: a turn must launch a drive step after it,
+        # capped so a missed open-loop spin can't carry it far.
+        args = drive_run.argparse.Namespace(step_secs=None, duty=30,
+                                            trim=17)
+        spin = {"action": "spin", "bearing_deg": 20.0}
+        far = drive_run.tandem_followup_cmd(
+            spin, {"area_frac": 0.005}, args)
+        self.assertEqual(far, f"go {drive_run.SPIN_FOLLOW_MAX_SECS:g} 30 17")
+        near = drive_run.tandem_followup_cmd(
+            spin, {"area_frac": 0.2}, args)
+        secs = float(near.split()[1])
+        self.assertGreaterEqual(secs, drive_run.STEP_MIN_SECS)
+        self.assertLessEqual(secs, drive_run.SPIN_FOLLOW_MAX_SECS)
+
+    def test_forward_plan_needs_no_followup(self):
+        args = drive_run.argparse.Namespace(step_secs=None, duty=30,
+                                            trim=17)
+        self.assertIsNone(drive_run.tandem_followup_cmd(
+            {"action": "forward", "bearing_deg": 1.0},
+            {"area_frac": 0.05}, args))
+
     def test_found_target_never_triggers_recovery(self):
         # 2026-10-30: without this the scan ran after EVERY tracked
         # step, threw away a good aim and logged a false "lost".

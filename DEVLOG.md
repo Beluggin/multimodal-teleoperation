@@ -35,6 +35,18 @@ settings-reset warning. No live readiness or physical state verified.
 Updated README opening status and HANDOFF review note to reflect these
 findings; historical live entries preserved.
 
+## 2026-10-30 — Tandem spin now chains a forward step (Adam's call)
+
+Adam: "When thing turns, it has to launch a drive step after it."
+A tandem spin used to end the step, so every turn paid a full look
+cycle (~5 s) before moving forward. tandem_followup_cmd: after a spin
+plan, drive forward from the same picture, area-based secs capped at
+SPIN_FOLLOW_MAX_SECS = 1.0 (Adam chose "always, capped" over
+"small spins only" / "full step"); the spin is open-loop, and the
+next look corrects what is left. Safe to chain: drive_step.py holds
+the connection for secs + 0.2 and stops, and drive() waits for it.
+Tests: 2 red-first; vision 86. NOT yet live-tested.
+
 ## 2026-10-30 — Bug #1 SOLVED: tandem "lost" was a false alarm every step
 
 "go to The Mug" (0.85 calibration, IPv4 fix): wide scan found it at

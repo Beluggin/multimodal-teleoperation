@@ -54,6 +54,7 @@ STEP_MIN_SECS = 0.5   # near the target: shortest, safest step
 STEP_MAX_SECS = 2.5   # far away: longest blind step (listener caps 3 s);
                       # raised from 1.5 on Adam's call — ~4 in per old
                       # step at cat distance was far too timid
+SPIN_FOLLOW_MAX_SECS = 1.0  # forward step chained after a tandem spin
 
 
 SPIN_MIN_SECS = 0.07
@@ -194,6 +195,23 @@ def tandem_motor_cmd(plan, aim, args):
     secs = (args.step_secs if args.step_secs is not None
             else step_secs_for_area(aim["area_frac"]))
     return f"go {secs:g} {args.duty} {args.trim}", secs
+
+
+def tandem_followup_cmd(plan, aim, args):
+    """Forward step chained after a tandem spin, or None.
+
+    Adam 2026-10-30: a turn must launch a drive step after it, from
+    the same picture, instead of ending the step and paying a whole
+    look cycle first. Capped at SPIN_FOLLOW_MAX_SECS because the spin
+    is open-loop (+/-10 deg, short spins undershoot); the next look
+    corrects whatever is left.
+    """
+    if plan["action"] != "spin":
+        return None
+    secs = (args.step_secs if args.step_secs is not None
+            else step_secs_for_area(aim["area_frac"]))
+    secs = min(SPIN_FOLLOW_MAX_SECS, secs)
+    return f"go {secs:g} {args.duty} {args.trim}"
 
 
 def fast_look(tracker, prompt, prev_centroid=None):
@@ -364,6 +382,10 @@ def main(argv=None):
                 run_tandem(plan, cmd)
                 if plan["action"] == "spin":
                     last_dx, last_spin_secs = aim["dx_right"], secs
+                follow = tandem_followup_cmd(plan, aim, args)
+                if follow is not None:
+                    print(f"  tandem: then '{follow}'")
+                    drive(follow)
             elif abs(aim["dx_right"]) > 0.15:
                 spin = "spinr" if aim["dx_right"] > 0 else "spinl"
                 secs = spin_secs_for_dx(aim["dx_right"], last_dx,
