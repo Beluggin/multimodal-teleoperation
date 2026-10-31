@@ -1,122 +1,127 @@
 # multimodal-teleoperation
 
-Meta hackathon entry: words become actions on a XiaoR Geek tank.
-Natural-language target → Meta model interprets and finds it → tank moves
-in short bounded steps → stops at the target.
+**Say what you want, and a real tank goes and gets it.**
 
-Status: phone controls, speech routing, and the Meta SAM autonomous
-approach loop are integrated; live approach runs are recorded in DEVLOG.md.
-Demo reliability remains open: tandem recovery currently runs even on a
-successful look, arrival uses a size-blind area threshold, and step-cap
-exhaustion reports success. See HANDOFF.md and the latest DEVLOG review.
-Decimal-duration and stop-priority parser regressions now have passing
-tests (41 parser tests on 2026-10-30). Unknown, negated, or ambiguous input
-must not move hardware; stop takes priority.
+A XiaoR Geek tracked robot (Raspberry Pi 5, pan/tilt camera, arm) that takes
+a spoken or typed instruction such as *"go to the blue ball then go to the
+mug"* or *"chase the cat"*, finds each target with **Meta SAM 3.1**, turns
+and drives to it, confirms it has arrived, and moves on to the next one.
+It runs on physical hardware, not in a simulator.
 
-No tokens or keys in this repo, ever.
+Built for the Meta AI Developer Hackathon (indie track), Oct 26 – Nov 4 2026.
+Every step, including the failures, is logged in [DEVLOG.md](DEVLOG.md).
 
-## Muse and SSH
+## What it does
 
-On Adam's desktop, run `muse` normally. The launcher always opens this repo
-as `/workspace` inside the tank-only sandbox, regardless of the host working
-directory. Use a fresh session; original sessions are outside this profile.
-The wrapper disables Muse's inner shell sandbox because it hides the SSH
-broker. The outer OS sandbox still encloses Muse and every tool; approval
-controls remain enabled. A built-in-sandbox warning refers to that inner layer.
-Start with `tank_tools/MUSE_BRIEF.md` to continue the servo work.
+- **Phone remote**: dual-thumbstick driving, a drag-to-pose arm, live
+  camera, telemetry, and voice or typed commands (`tank_phone/`).
+- **Language → mission**: a fixed-phrase parser turns `go to / go get /
+  find / fetch / check out / chase the X` into a vision goto. *"…then
+  …"* chains up to three targets. Negated, ambiguous or unknown input
+  never moves the hardware, and stop always wins (`tank_tools/`).
+- **See → turn → drive → arrive** (`tank_vision/`):
+  1. **Look**: camera frame → SAM 3.1 with the target words → the
+     instance nearest the last sighting.
+  2. **Tandem move** from one picture: the chassis spins toward the
+     target's bearing *while* the neck swings back to centre, then drives
+     forward. (Yes, the head turns like the Exorcist.)
+  3. **Arrive** when the target is big in frame or runs off the bottom
+     edge, but only after one confirm look that faces it squarely with
+     the camera aimed down.
+  4. **Lose it?** A recovery ladder: back up and look (it may be under
+     the camera), then an outward alternating sweep of the neck, then
+     alternating chassis turns (left 60°, right 120°, left 180°). If
+     nothing turns up, it stops.
 
-Inside Muse, `ssh tank` reaches `pi@<tailscale-ip>`; `ssh tank-lan` reaches
-`pi@tank.local`. SCP uses the same SSH configuration. The dedicated key
-is outside the repo. Physical movement still requires Adam's authorization.
-SSH exposes whatever that account can read on the Pi; do not place unrelated
-private material there. Direct desktop services and other network targets
-are unavailable. Other permitted destinations are Meta API/login HTTPS and
-Modal's HTTPS services plus three verified Modal storage/CDN hosts, and
-Baseten's API/docs/inference and model/chain deployment HTTPS endpoints.
-See [Baseten MCP access](BASETEN_ACCESS.md) for configuration and checks.
-Missing access fails closed; there is no automatic unrestricted retry.
+## Meta in the stack
 
-## Modal access (2026-10-27)
+- **SAM 3.1 via the Meta Model API** is the vision. Text prompt plus
+  image in, masks and boxes out (`tank_vision/meta_sam.py`, with the
+  official parser). Every look in the drive loop is a SAM call.
+- **Muse, Meta's coding agent**, built much of the stack. That includes
+  reverse-engineering the stock servo controller: the XiaoR servo MCU
+  protocol at I2C `0x17` (`FF ch angle FF`) was recovered from the
+  vendor's compiled module and documented in
+  [`tank_tools/servo_0x17_protocol.md`](tank_tools/servo_0x17_protocol.md).
+  `tank_phone/servo_ctl.py` now drives the servos directly, with no
+  vendor code.
 
-Exit and restart `muse` once to load the updated broker. Existing tank-only
-sessions can be resumed in this isolated profile. Inside Muse, use `modal`
-or `.venv/bin/python -m modal`:
+**The whole robot runs on this repo's own code. The stock XiaoR stack is
+fully replaced:**
+- **Motors**: the repo's own GPIO listener and a motor map measured on
+  the bench (`tank_bench/`).
+- **Servos**: the recovered `0x17` protocol.
+- **Camera**: a small C MJPEG grabber (`tank_phone/qstream.c`).
 
-```bash
-modal --version
-modal run modal_app.py --image mc.jpg --point 0.335,0.320
-```
+## Live results (from DEVLOG, physical runs)
 
-The second command starts the existing GPU app and consumes Modal credits;
-it is a usage example, not part of the isolation checks. The launcher exposes
-only the active Modal login in its separate home, outside this repo. Siggy's
-files, host credentials and direct desktop networking remain hidden.
+| When | Run | Result |
+|---|---|---|
+| Oct 27 | "go get the shoe" | first end-to-end SAM approach, ARRIVED |
+| Oct 29 | full mission to a Croc | scan → lock-on → 7 steps, ARRIVED in 91 s |
+| Oct 30 | cat run (before fixes) | 10 min 52 s: network stalls and false recoveries |
+| Oct 30 | foot, after IPv4 fix | 5 steps in 68 s |
+| Oct 30 | blue ball | ARRIVED in 71 s, including a 29 s cold search |
+| Oct 31 | **blue ball → mug (chained)** | **both ARRIVED in 67 s** |
+| Oct 31 | chase the cat | followed the cat; when she moved, it searched |
+| Oct 31 | object → new object chase | 38 s (timed by Adam) |
 
-Modal 1.6.3's proxy extras are installed in the existing project venv. The
-`modal` wrapper handles the venv's host-specific executable path. Model/image
-dependency downloads happen on Modal; this exception does not grant the
-desktop unrestricted Internet access. See [Modal access details](MODAL_ACCESS.md)
-for destinations, checks and rollback.
+The Oct 30–31 speedups came from finding the actual causes. Briefly:
+- IPv6 connects to the API that never answered (now IPv4, with a short
+  connect timeout).
+- A pan-servo scale measured at 0.85°/unit, not the assumed 1.2.
+- A recovery check that ran even when the target had been found.
+- A scan that looked at every spot about 2.5 times.
 
-The agent's history is separate, but anything deliberately put in this repo,
-read on the tank, pasted into Muse, or sent in an API request can reach Meta.
-This boundary does not reverse earlier uploads or certify future paid terms.
+Each fix has a test and a commit.
 
-## Local controls and checks
+## Safety
 
-### Agent round table
+- Motors run through a token-gated listener on the Pi. Every move is
+  bounded in time, and a dropped connection stops the motors.
+- Each drive is capped in steps. On any error the runner sends a stop
+  in its `finally`.
+- Unknown, negated or ambiguous language never moves anything.
+- No keys or tokens in this repo. Keys come from the environment only.
 
-From a host terminal, run `python3 ~/multimodal-teleoperation/round_table.py`.
-Claude and Codex advise; Muse can implement inside its existing tank-only
-isolation. The directory name is singular. Example:
+## Layout
 
-```text
-@all Suggest a bounded fix for target loss in tank_vision/drive_run.py
-/share 2
-@muse Review the shared advice against the current implementation
-/keys muse
-@muse Implement the agreed fix and run offline tests; no physical tests
-/take
-```
+| Path | What |
+|---|---|
+| `tank_vision/` | SAM client, approach loop (`drive_run.py`), geometry (`centre.py`), launcher, offline YOLO11n + MobileSAM fallback |
+| `tank_tools/` | parser (`xiaor_text_action.py`), keyboard driver, servo protocol notes |
+| `tank_phone/` | phone web UI + Pi server, direct `0x17` servo driver, C MJPEG grabber |
+| `tank_speech/` | speech hooks (the live path is the phone browser's speech recognition → parser) |
+| `tank_bench/` | motor listener, measured motor map, calibration scripts |
+| `docs/WORKSPACE.md` | the author's agent/sandbox workspace notes |
 
-Use the actual displayed adviser answer ID with `/share`. Only selected
-answers, direct `@muse` prompts, and Muse's own replies enter Muse's room
-context. Adviser questions and unshared answers are withheld. Review an
-answer for unrelated/private material before sharing it. `@all` addresses
-the two advisers; `/help` lists commands. No automatic agent handoffs occur.
+Tests: `python3 -m unittest discover -s <dir> -p 'test_*.py'` for each of
+`tank_vision`, `tank_tools`, `tank_phone`, `tank_speech`. All four suites
+pass (Oct 31).
 
-The controller never resumes existing conversations or saves a transcript;
-each CLI may retain its own logs. Claude runs with tools disabled and safe
-mode; Codex uses fresh ephemeral read-only sessions with user config ignored.
-These adviser settings are not Muse's OS isolation. Muse always uses the
-existing host supervisor with its pinned workspace, private profile, broker,
-and contributor settings unchanged; missing isolation fails closed. Default
-Muse discussion disables shell and filesystem writes; `/keys muse` restores
-its normal tool approvals. No permission to move hardware follows from keys.
-Already-shared content cannot be recalled; quit for a fresh room.
+## Hardware and vendor files
 
-Offline adapter checks: `python3 -m unittest test_round_table`.
-Live model compatibility/authentication must be checked at first use; the
-offline suite does not exercise hosted providers.
+The robot is a **XiaoR Geek** tank kit (Raspberry Pi 5 "V2" control board).
+XiaoR's stock software, including the compiled servo module
+`_XiaoRGEEK_SERVO_*.so` and its companion files, is **proprietary and is
+not included in this repository**. It ships with the kit and its image.
+This project does not need it at runtime: the servos are driven through
+the documented `0x17` protocol. Only the research tool
+`tank_tools/fake_smbus_trace.py`, which reproduces the reverse-engineering
+trace, expects you to supply your own copy of the vendor files.
+`IMPORT_MANIFEST.json` records their hashes for reference. "XiaoR Geek"
+is the vendor's name; this project is not affiliated with them.
 
-Run the keyboard driver from a regular desktop terminal (outside Muse):
+## Status and known limits
 
-```bash
-cd ~/multimodal-teleoperation
-TANK_HOST=<tailscale-ip> python3 tank_tools/tank_control.py
-```
+- Open-loop motion: short spins undershoot (motor spin-up), and timing
+  drifts with battery charge.
+- Arrival is judged from the image. The ultrasonic sensor is wired but
+  silent, and tilt degrees per unit are not yet measured.
+- With two cats in the room, it hunts whichever one it sees first.
 
-It still uses the existing bench listener on port 5098, the existing
-`/tmp/claude-1000/bench_token`, and `/tmp/claude-1000/tank_live.log`.
-WASD/arrows drive, Space stops, `t` enters typed-command mode, `q` quits.
-The token/log directory must exist as in the original setup. Live driving
-was not exercised during the isolation setup.
+## Built with
 
-```bash
-python3 -m unittest discover -s tank_tools -p 'test_*.py'
-```
-
-`tank_bench/README.md` contains the measured motor map and listener setup.
-The stock servo binary, about.py and JPEG are together in `xiaor/`.
-IMPORT_MANIFEST.json records the initial copied-file hashes; later edits
-should be logged in DEVLOG.md, not silently synchronized to the source project.
+Built by Adam with AI coding agents: Meta's Muse, OpenAI's Codex and
+Anthropic's Claude. The hardware tests were run in person on a living-room
+floor. [HANDOFF.md](HANDOFF.md) has the current engineering state.

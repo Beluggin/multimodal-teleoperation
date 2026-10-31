@@ -15,3 +15,6 @@ __pycache__/
 .venv/
 vision_out/
 tank_vision/weights/*.pt
+
+# XiaoR vendor files (proprietary; kept locally, not redistributed)
+xiaor/
