@@ -138,5 +138,68 @@ class ManualApiMotorsOff(ManualApi):
     motors = False
 
 
+JPEG = b"\xff\xd8" + b"pixels" + b"\xff\xd9"
+
+
+class DriveFrame(unittest.TestCase):
+    # While a drive runs the camera belongs to the drive loop, so the
+    # phone shows the frames the loop saves (Adam's demo screen recording).
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.mkdtemp()
+        self.frame = os.path.join(self.tmp, "centre_frame.jpg")
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), srv.Handler)
+        self.httpd.drive_frame_path = self.frame
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+        self.port = self.httpd.server_address[1]
+
+    def tearDown(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+    def get(self):
+        try:
+            with _OPENER.open(f"http://127.0.0.1:{self.port}/api/driveframe",
+                              timeout=5) as r:
+                return r.status, r.headers.get("Content-Type"), r.read()
+        except urllib.error.HTTPError as e:
+            return e.code, None, b""
+
+    def queue(self, queued_at):
+        self.httpd.launch_status = {"state": "running", "text": "",
+                                    "target": "mug", "detail": "",
+                                    "stop_requested": False,
+                                    "queued_at": queued_at}
+
+    def write(self, data, mtime):
+        with open(self.frame, "wb") as f:
+            f.write(data)
+        os.utime(self.frame, (mtime, mtime))
+
+    def test_serves_frame_taken_during_this_launch(self):
+        self.queue(1000.0)
+        self.write(JPEG, 1005.0)
+        code, ctype, body = self.get()
+        self.assertEqual((code, ctype, body), (200, "image/jpeg", JPEG))
+
+    def test_frame_from_an_earlier_mission_is_not_shown(self):
+        self.queue(1000.0)
+        self.write(JPEG, 990.0)
+        self.assertEqual(self.get()[0], 204)
+
+    def test_half_written_frame_falls_back_to_last_complete(self):
+        self.queue(1000.0)
+        self.write(JPEG, 1005.0)
+        self.get()
+        self.write(b"\xff\xd8half", 1009.0)   # qstream mid-write
+        code, _, body = self.get()
+        self.assertEqual((code, body), (200, JPEG))
+
+    def test_no_launch_or_no_file_is_no_content(self):
+        self.assertEqual(self.get()[0], 204)
+        self.queue(1000.0)
+        self.assertEqual(self.get()[0], 204)
+
+
 if __name__ == "__main__":
     unittest.main()

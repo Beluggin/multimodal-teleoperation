@@ -37,6 +37,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# The desktop drive loop (tank_vision/centre_run.grab) writes each look
+# here with qstream while it owns the camera.
+DRIVE_FRAME = "/tmp/centre_frame.jpg"
 for _p in (HERE, os.path.dirname(HERE),
            os.path.join(os.path.dirname(HERE), "tank_tools")):
     if _p not in sys.path:
@@ -257,6 +260,41 @@ class Handler(BaseHTTPRequestHandler):
             return json.loads(self.rfile.read(n).decode())
         except (ValueError, UnicodeDecodeError):
             return None
+
+    def _serve_drive_frame(self):
+        """Latest complete frame the drive loop took during this launch.
+
+        204 when there is none yet: no launch, no file, or only a frame
+        left over from an earlier mission. A frame qstream is still
+        writing (no JPEG end marker) falls back to the last complete one.
+        """
+        s = self.server
+        queued_at = self._launch_status().get("queued_at")
+        path = getattr(s, "drive_frame_path", DRIVE_FRAME)
+        body = None
+        try:
+            if queued_at is not None and os.path.getmtime(path) >= queued_at:
+                with open(path, "rb") as f:
+                    data = f.read()
+                if data[:2] == b"\xff\xd8" and data[-2:] == b"\xff\xd9":
+                    s.drive_frame_last = (queued_at, data)
+                    body = data
+        except OSError:
+            pass
+        last = getattr(s, "drive_frame_last", None)
+        if body is None and last and last[0] == queued_at:
+            body = last[1]
+        if body is None:
+            self.send_response(204)
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "image/jpeg")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
 
     def _serve_mjpeg(self):
         """Relay concatenated-JPEG stdout as multipart/x-mixed-replace.
@@ -489,6 +527,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(self._servo_payload())
         elif path == "/api/frame":
             self._serve_mjpeg()
+        elif path == "/api/driveframe":
+            self._serve_drive_frame()
         else:
             self._json({"ok": False, "error": "not found"}, code=404)
 
@@ -623,7 +663,7 @@ class Handler(BaseHTTPRequestHandler):
             self.server.launch_status = {
                 "state": "pending", "text": text, "target": a.target,
                 "detail": "queued — waiting for the desktop launcher",
-                "stop_requested": False}
+                "stop_requested": False, "queued_at": time.time()}
             self._json({"ok": True, "state": "pending",
                         "target": a.target})
         elif path == "/api/launch/consume":

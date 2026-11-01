@@ -2,6 +2,27 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-11-01 — Showcase shows the drive loop's frames (no more black screen)
+
+Adam: in Showcase the phone screen goes black during a drive, and the
+screen recording is part of the demo video. Cause: the USB camera has one
+reader, so the page drops its MJPEG feed when a launch is queued.
+New `GET /api/driveframe` on the Pi server serves `/tmp/centre_frame.jpg`
+(what `centre_run.grab` writes on every look), only if written after the
+current launch was queued (`queued_at`; 204 otherwise) and only if the
+JPEG has its end marker (a half-written frame falls back to the last
+complete one). The page polls it every 700 ms during a drive and keeps the
+last frame up afterwards until the live camera resumes. One frame per
+look, not video, and no SAM box overlay yet. Red-first: 4 DriveFrame
+tests failed, then passed; phone suite green; page JS syntax-checked.
+Deployed to the Pi and the server restarted with the same flags (LIVE
+SERVO, LIVE MOTORS), launch idle, no motion. Not yet seen on a live drive.
+Deploy note: a first deploy from the working tree also pushed Codex's
+uncommitted tap-to-select page/server, whose `selection.py` the Pi lacked;
+the server failed to start for about a minute. Redeployed as HEAD plus
+this change only. Pi backups: `*.bak-20261101`; the copied selection.py
+is parked as `selection.py.codex-wip`.
+
 ## 2026-10-31 — Codex review of changes through 49225ae
 
 Read-only runtime review of bb31595..49225ae while Claude continues work;

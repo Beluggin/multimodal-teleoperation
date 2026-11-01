@@ -10,6 +10,8 @@
   body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0;
          background: #0b0e11; color: #eef1f4; overflow: hidden; }
   #stage { position: fixed; inset: 0; }
+  #driveview { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    pointer-events:none; }
   #cam { position: absolute; inset: 0; width: 100%; height: 100%;
          object-fit: cover; background: #171b1f; touch-action: none;
          -webkit-touch-callout: none; -webkit-user-select: none;
@@ -149,6 +151,7 @@
 <body>
 <div id="stage">
   <img id="cam" src="/api/frame" alt="camera" draggable="false">
+  <img id="driveview" alt="what the drive loop sees" hidden>
   <div id="cross"></div><div id="tapmark"></div>
 
   <div id="topbar">
@@ -402,6 +405,7 @@ function reloadCam() {
   // The USB camera drops and re-enumerates on its flaky cable; a fresh
   // src makes the server spawn a fresh producer instead of the phone
   // holding a dead last frame.
+  stopDriveView(true);
   $('cam').src = '/api/frame?t=' + Date.now();
 }
 $('cam').addEventListener('error', () => { if (!camReleased) setTimeout(reloadCam, 1500); });
@@ -417,6 +421,35 @@ $('cam').addEventListener('pointerdown', async (e) => {
     : (res.error || 'tap refused'));
 });
 
+// ---------- drive view: the loop's own frames while it owns the camera ----------
+// The USB camera has one reader. During a drive the page shows each frame
+// the drive loop looks at (one per look, not live video); the last one
+// stays up after the drive until the live camera resumes.
+let driveViewTimer = null, driveViewUrl = null, driveViewBusy = false;
+async function pullDriveFrame() {
+  if (driveViewBusy) return;
+  driveViewBusy = true;
+  try {
+    const r = await fetch('/api/driveframe', {cache: 'no-store'});
+    if (r.status !== 200) return;
+    const url = URL.createObjectURL(await r.blob());
+    const img = $('driveview');
+    img.onload = () => {
+      if (driveViewUrl) URL.revokeObjectURL(driveViewUrl);
+      driveViewUrl = url; img.hidden = false;
+    };
+    img.src = url;
+  } catch { /* next poll retries */ } finally { driveViewBusy = false; }
+}
+function startDriveView() {
+  stopDriveView(true);
+  driveViewTimer = setInterval(pullDriveFrame, 700);
+}
+function stopDriveView(hide) {
+  if (driveViewTimer) { clearInterval(driveViewTimer); driveViewTimer = null; }
+  if (hide) $('driveview').hidden = true;
+}
+
 // ---------- launch: page queues, desktop launcher drives ----------
 let lastGotoText = '', launchTimer = null, camReleased = false;
 function noteGoto(r, text) {
@@ -431,6 +464,8 @@ async function refreshLaunch() {
     const b = await get('/api/launch');
     const L = b.launch || {};
     const active = L.state === 'pending' || L.state === 'running';
+    if (active && !driveViewTimer) startDriveView();
+    if (!active && driveViewTimer) { stopDriveView(false); pullDriveFrame(); }
     $('launchStopBtn').hidden = !active;
     $('launchBtn').disabled = active || !lastGotoText;
     if (L.state === 'pending') {
@@ -469,6 +504,7 @@ $('launchBtn').addEventListener('click', async () => {
   camReleased = true;
   $('cam').removeAttribute('src');
   setStatus('Queued…', 'Camera handed to the drive loop.');
+  startDriveView();
   $('launchNote').textContent = 'Queued: ' + lastGotoText;
   stopLaunchPolling();
   launchTimer = setInterval(refreshLaunch, 1200);
