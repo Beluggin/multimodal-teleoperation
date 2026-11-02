@@ -23,10 +23,158 @@ the server failed to start for about a minute. Redeployed as HEAD plus
 this change only. Pi backups: `*.bak-20261101`; the copied selection.py
 is parked as `selection.py.codex-wip`.
 
-## 2026-10-31 — Codex review of changes through 49225ae
+## 2026-10-31 — Bench revived at 16:22 EDT
 
-Read-only runtime review of bb31595..49225ae while Claude continues work;
-HEAD stayed at 49225ae and the working tree was clean during checks.
+At Adam's request, checked Pi :5098: no listener/process. Started existing
+motor_listen.py with its existing token (not displayed). Stop-only check
+returned `ok stop` at 16:22:10 EDT; listener PID 649490. Expected expiry
+~17:22 EDT under its one-hour lifetime. No drive or servo commands sent.
+
+## 2026-10-31 — Adversarial review of demo claims and failure handling
+
+Adam requested a red-team review of this project ("/multi" resolved to
+~/multimodal-teleoperation). Reviewed current DEVLOG, README, AGENTS,
+vision capture/arrival/recovery and launcher code; HEAD 9b41735. Existing
+uncommitted log history preserved. No hardware calls or runtime edits.
+
+New offline reproductions (mocked transports, no network):
+- centre_run.grab accepted an existing valid temporary JPEG even when
+  BOTH capture and SCP returned exit 255. Return codes are ignored and
+  only the old file's JPEG prefix is checked. A stale frame can therefore
+  reach control decisions as a fresh observation. Priority: check command
+  success, use a new capture destination, validate freshness and decoding.
+- run_tandem(plan, None) returned normally when its servo callback returned
+  False. Arrival confirmation can proceed despite a refused neck move;
+  motor+servo paths also suppress servo failures. Propagate failed pose
+  commands and distinguish attempted confirmation from successful motion.
+- Parser still routes "dance then go to the mug" to mug, while the reversed
+  clause order is ambiguous. This is intentional in an existing test but
+  contradicts broad unknown/mixed-command refusal claims.
+
+Previously reproduced false-success paths remain: any post-reverse
+reacquisition becomes ARRIVED, and step-cap fallthrough returns success
+with no final target. Identity is nearest image position (largest on a
+fresh scan), not persistent object identity. Two matching objects or
+occlusion can swap the target. These are limits on reliability claims,
+not evidence that the successful mug approach did not happen.
+
+Evidence/presentation: README's 67 s "both ARRIVED" row omits Adam's
+correction that the mug was ~1 ft short. The stronger grounded result is
+139.728 s to final acknowledged stop with Adam confirming mug reached.
+38 s remains an Adam-reported sequence without exact boundaries/targets.
+No success-rate denominator is recorded; passing unit tests and selected
+runs do not establish repeatability. Recommend fixed-layout repeated
+trials, missing-target/duplicate-target/occlusion cases, and offline
+capture-failure, step-cap and interruption regressions. Measure physical
+arrival separately from software status and record all attempts.
+
+No full suites rerun: this pass used targeted reproductions plus source
+and historical evidence review. README claims flagged for correction;
+not edited during this review. The successful demo remains substantiated;
+robust arrival, identity and failure handling are unfinished.
+
+## 2026-10-31 — Timed blue ball → mug: 2 min 19.73 s, mug reached
+
+Monitored /tmp/launcher_timed.log live after the authorized bench restart.
+Launcher mission 1 announcement 03:10:00.983 → final acknowledged stop
+03:12:20.711 = **139.728 s** for the chain (log-receipt timestamps, not
+phone-tap timing). Ball ARRIVED 03:10:30.940, stop ok 03:10:31.199
+(30.216 s elapsed); mug mission began 03:10:31.436. Mug search needed
+neck sweeps and L60 then R120 chassis turns, both motor-acknowledged.
+Mug scan FOUND 03:12:02.909; spin + forward 1.76261 s, arrival confirm,
+ARRIVED 03:12:20.447, stop ok 03:12:20.711. Mission 2 took 109.275 s;
+17.802 s from mug scan FOUND to final stop. Both missions reported
+ARRIVED, rather than falling through the step cap.
+
+Adam's ground truth: mug was visible at the right frame edge at the
+rightmost camera pan during earlier search; recognition missed it.
+Exact corresponding frame not independently inspected. Adam subsequently
+confirmed "it got there" at the mug. This run demonstrates successful
+rightward chassis-search recovery and physical mug approach despite the
+initial missed detection. Earlier 38-second report remains a separate
+Adam-reported result; this is the timed run. No code changes made.
+
+## 2026-10-31 — Bench listener restored for timed retry
+
+Adam authorized restart and stop verification. Read-only Pi diagnostics
+confirmed no listener on :5098 and no motor_listen.py process. Started
+existing ~/motor_listen.py using the existing Pi token without displaying
+it. At 03:09:27 EDT, drive_step.py stop returned `ok stop`; listener PID
+318515. Expected one-hour expiry ~04:09. No drive or servo command sent.
+Codex SSH needs explicit tank identity and LAN hostname (default identity
+was rejected; tank-lan alias absent); existing ~/.ssh/tank succeeded.
+
+## 2026-10-31 — Timed chain attempt blocked by motor listener
+
+Live log: mission 1/2 "go to the blue ball" at 03:07:41.962;
+first aim at 03:07:46.733 (4.771 s from mission announcement).
+First go 2.5 s command failed; final stop also failed with Pi
+127.0.0.1:5098 ConnectionRefusedError. No completed mission timing;
+these timestamps measure launcher log receipt, not the phone tap.
+Listener had been left down at Adam's request; no restart performed.
+
+## 2026-10-31 — Adam reports 38-second object-to-object chase
+
+Adam reports **38 seconds** for "chase object and acquire new object
+chase": approach/follow one object, acquire a new object, and chase it.
+This timing refers to the object-to-object sequence, not the cat chase
+alone. Target identities and precise timing boundaries were not supplied;
+this is Adam's observed result, not an independently timed log analysis.
+It does not establish confirmed arrival at both targets or resolve the
+previously documented completion-status bugs. No code changes made.
+
+## 2026-10-31 — Cat round 2: recognition succeeded, listener refused motors
+
+Monitored /tmp/launcher_timed.log live. At 02:00:19 "chase the cat"
+launched; step 1 detected cat (area 0.0496, dx -0.314). Planned bearing
++32.1 degrees / spinr 0.29 s, but drive_step failed connecting to Pi
+127.0.0.1:5098 with ConnectionRefusedError. Final stop also refused;
+no successful motor actuation or stop acknowledgement in this run.
+This matches the handoff's ~01:59 listener expiry; expiry itself was
+not independently diagnosed. Requested Adam's authorization to restart
+listener and verify stop; Adam chose "Leave it stopped." No restart
+or hardware writes performed here.
+
+## 2026-10-31 — Cat test: followed, cat moved, tank searched
+
+Adam's live ground truth: the tank followed the cat; when the cat moved,
+the tank scanned. Adam stopped the test at that point, having obtained
+the behavior he wanted. This verifies observed follow-to-search behavior;
+reacquisition and autonomous arrival were not tested to completion.
+No independent motor-stop or live-log verification performed in this
+entry; the stop is Adam's report. No runtime changes made.
+
+## 2026-10-31 — Passive Pi-view recording armed for cat test
+
+Adam requested recording from the Pi. Continuous qstream capture would
+contend with the drive loop's exclusive camera opens, so started a passive
+desktop recorder of fresh /tmp/centre_frame.jpg snapshots already copied
+from the Pi. No camera or motor commands, no drive-code changes. Recorder:
+/tmp/record_tank_frames.py; output ~/tank-recordings/20261031-015624.
+Saves changed valid JPEGs plus timestamps and a 2 fps MP4 holding the last
+frame between updates; polls every 0.5 s, stops after 15 minutes. This is
+sampled tracker imagery, not continuous camera footage; rapid updates
+can be missed. Startup verified waiting for fresh frames; no frames or
+finished video verified yet. Recorder exec session: 73986.
+
+## 2026-10-31 — Codex reads cat-test handoff at a37624b
+
+Reviewed 68cd416 parser changes and a37624b handoff. "chase the cat"
+now routes to goto; parser suite 46 passed locally. Verbless chain
+segments now require a determiner; invalid prefix handling remains as
+explicitly documented by the new test ("dance then go to the mug"
+still routes to mug). Neither completion defect from the previous
+review changed: drive_run.py is unchanged since be48b3a.
+Read-only desktop check: handoff launcher PIDs 551201/551203 were absent;
+/tmp/launcher_timed.log ended at the 01:01:54 queue-watching message,
+with no later cat mission shown. This does not establish Pi state or
+exclude a launcher under other PIDs. No hardware writes, service restarts,
+or hosted calls performed. Live state needs checking before resumption.
+
+## 2026-10-31 — Codex review of changes through be48b3a
+
+Read-only runtime review of edccf07..be48b3a while Claude continues work;
+HEAD stayed at be48b3a and the working tree was clean during checks.
 The false tandem-loss guard is fixed. Reviewed measured pan calibration,
 alternating neck/chassis sweeps, chained missions, spin-follow drive,
 bottom-clip arrival, arrival confirmation, and reverse-first recovery.
@@ -53,7 +201,7 @@ Only this review entry was written; code and HANDOFF left to active work.
 
 ## 2026-10-30 — Codex offline repository review
 
-Reviewed clean working tree at bb31595, drive/recovery control flow,
+Reviewed clean working tree at edccf07, drive/recovery control flow,
 launcher lifecycle, recent IPv4 change, and project status documents.
 No hardware commands or hosted API calls were made; runtime code unchanged.
 
@@ -158,7 +306,7 @@ NOT yet live-tested. Video note (Adam): frame it as "tank eats cats".
 
 ## 2026-10-31 — Chain 4: bottom-clip ARRIVED live; Adam's outward sweep
 
-Chain 4 ("go to the blue ball then go to the mug"), after 8381f20:
+Chain 4 ("go to the blue ball then go to the mug"), after d13773c:
 mission 1 seen at look 1, go 2.5 s ×2, lost (step 2 area had DROPPED
 0.016→0.011 — likely a farther blue thing), the ladder's wide scan found
 the ball at the first stop with y_bottom 1.0 → "ARRIVED (box on the
@@ -199,7 +347,7 @@ Tests: 6 red-first; vision 98. NOT yet live-tested.
 
 ## 2026-10-31 — Chained missions live; loss ladder (reverse, then chassis scan)
 
-Chained missions (6dd419d): "go to the blue ball then go to the mug".
+Chained missions (7fe2d76): "go to the blue ball then go to the mug".
 The parser accepts a chain only when every segment is a clean goto (max
 3); the Pi server + parser were redeployed (old parser kept as
 xiaor_text_action.py.bak-20261030; server restarted with the same flags;
@@ -208,7 +356,7 @@ Chain 1: mission 1 ball, 5 steps, ended with the ball under the camera
 (final aim None, Adam: "it got so close the ball is under the camera");
 mission 2 mug started 0.3 s later — handover proven; Adam stopped it
 mid-scan. Adam: early steps felt short → spin follow-up cap 1.0 → 2.0 s
-(2aeca86). Chain 2: ball seen at look 1, go 2.5 s, go 1.97 s (area
+(b3bc3ef). Chain 2: ball seen at look 1, go 2.5 s, go 1.97 s (area
 0.012 → 0.041 → 0.186 by step 3), then lost at the ball → neck-only
 verification scan (12 stops) → mission FAILED → chain ended, mug never
 tried. Ground truth: the ball was under the nose.
@@ -281,7 +429,7 @@ has_prev, recovered) never asked whether the look FOUND the target,
 and the call site didn't either, so after every tracked step it
 printed "lost", discarded the good aim and ran a neck scan;
 tandem_recovered then reset, so it repeated every step. Introduced
-with 556c1eb; its test covered only flag combinations.
+with 5e7bafc; its test covered only flag combinations.
 
 Fix: should_tandem_recover(..., found) is False when the look found
 the target; call site passes found=aim is not None. Red-first test.
@@ -388,7 +536,7 @@ turns spinr 0.55 s (~60° each, ~180° total; Adam read it as
 ~230° with the neck offset) and never found it — fail-closed
 stop verified. Ground truth: beer was the other way. Timing
 note: this launch started BEFORE the left-favour commit
-(b444a04) landed, so its drive_run subprocess still had the
+(0a96d55) landed, so its drive_run subprocess still had the
 old spinr default. Left-favour (chassis turns spinl, covering
 the neck's 22-unit handicapped side) applies from the next
 launch. Prompt "beer" also never got a single SAM hit in 4
@@ -469,7 +617,7 @@ tracked the cat through steps 1–4 — area 0.100 → 0.131 → 0.103
 lost at step 5, safe stop verified. The cat out-moved the
 stop-decide-move loop, but tracking held across 4 approaches.
 Adam's verdict on the steps: "~4in each time" — spin-up eats
-0.5 s steps at 30%. Fix (4d3156c): forward curve 0.25→0.40
+0.5 s steps at 30%. Fix (3466587): forward curve 0.25→0.40
 coefficient, cap 1.5→2.5 s (listener hard cap 3 s); the >0.08
 near-target x0.75 shrink stays, so arrival-area step is only
 0.6 s. At cat areas (~0.10) steps become ~0.95 s. Red-first
@@ -490,7 +638,7 @@ scan step drops 30→15 servo units (was a full old-FOV apart —
 gap-prone; now ~half the real FOV). Vision 68 green. This also
 means every dx→degrees conversion was overstated ~1.8x, a
 likely contributor to recalibration overshoot/sign flips.
-Chassis-scan turn widened 40→60° in the same session (bc56df9,
+Chassis-scan turn widened 40→60° in the same session (95cf5fe,
 Adam: "we need a wider turn base") — ~20° leg overlap remains.
 
 ## 2026-10-30 — Voice launches, Step 1 chassis scan live, pan calibrated
@@ -508,7 +656,7 @@ close. "go to the bottle" then effectively arrived unflagged:
 Arrival needs a size-independent signal (relative area growth or
 the dead ultrasonic), not an absolute area.
 
-Step 1 built + live (commits cd851cc): run_chassis_scan — neck
+Step 1 built + live (commits e19af11): run_chassis_scan — neck
 scan fails → one bounded ~40° chassis turn (default spinr) →
 rescan, ≤3 turns, failed spin aborts. 66 vision tests green
 (7 new, red-first). Live: first attempt aborted correctly when

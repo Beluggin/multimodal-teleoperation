@@ -67,7 +67,7 @@ No Whisper deployment or live audio test was performed during access setup.
    (done), `BASETEN_STT_MODEL_ID` (or `BASETEN_STT_CHAIN_ID` /
    `BASETEN_STT_WS_URL`). `BASETEN_LLM_MODEL` defaults to the verified
    Muse Spark id. STT bills GPU time separately from Muse model credits —
-   side path only; demo inference stays on Meta models per AGENTS.md.
+   side path only; demo inference stays on Meta models.
 3. `python3 -m tank_speech --status` should report `enabled: true`.
 4. Restart the Pi phone server with that env (safe flags of your
    choice; speech needs neither `--enable-servo` nor `--enable-motors`).

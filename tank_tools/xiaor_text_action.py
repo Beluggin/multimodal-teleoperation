@@ -15,7 +15,7 @@ Usage:
 
 Pi deploy: copy this one file next to tank_server.py (same minimum set as
 tank_setup.md). --exec posts to $TANK_URL (default http://localhost:5000)
-with $TANK_TOKEN (default change-me).
+with $TANK_TOKEN (no default; set it in the environment).
 
 Safety posture: unknown, negated ("don't ..."), and
 ambiguous ("forward and wave") inputs NEVER move. E-stop ("stop now",
@@ -68,7 +68,7 @@ SLOW_SPEED = 25
 FAST_SPEED = 40
 
 DEFAULT_URL = os.environ.get("TANK_URL", "http://localhost:5000")
-DEFAULT_TOKEN = os.environ.get("TANK_TOKEN", "change-me")
+DEFAULT_TOKEN = os.environ.get("TANK_TOKEN", "")
 
 
 # ---------------------------------------------------------------------------

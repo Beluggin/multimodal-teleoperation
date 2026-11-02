@@ -16,7 +16,7 @@ is also listener-capped at 3 s / 40%.
     .venv/bin/python -m tank_vision.drive_run --prompt shoe --steps 5
     .venv/bin/python -m tank_vision.drive_run --text "go get the shoe"
 
-Authorisation: Adam present, per-case (AGENTS.md). Never run unattended.
+Run only with an operator present. Never run unattended.
 """
 
 import argparse

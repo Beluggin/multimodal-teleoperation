@@ -70,26 +70,6 @@ No HF gate, no GPU. Key from `MODEL_API_KEY` env only — never commit it.
 `--probe` saves the raw response (mask encoding gets confirmed against
 one real response before downstream geometry is trusted).
 
-## Modal (optional self-host path)
-
-`modal_app.py` (repo root) runs the same contract on a Modal L4 GPU.
-Point/box keep the phone's tap/drag focus semantics; Pi calls the
-deployed HTTPS endpoint via `tank_vision/modal_client.py` (stdlib only;
-set `TANK_MODAL_URL`). Self-hosted SAM 3.1 weights are gated on HF
-(request access at huggingface.co/facebook/sam3.1, download
-`sam3.1_multiplex.pt`, `modal volume put tank-weights ... /`); until
-then the app uses auto-downloaded `mobile_sam.pt` (no text mode).
-Pi-local MobileSAM above remains the offline fallback — try cloud,
-fall back, never block.
-
-```bash
-# desktop terminal (the Muse sandbox cannot reach Modal)
-.venv/bin/pip install modal
-.venv/bin/modal setup
-.venv/bin/modal run modal_app.py --image mc.jpg --point 0.335,0.320
-.venv/bin/modal run modal_app.py --image room.jpg --text "the red cup"
-.venv/bin/modal deploy modal_app.py   # endpoint URL -> TANK_MODAL_URL
-```
 
 ## Pi (after the desktop proof passes)
 

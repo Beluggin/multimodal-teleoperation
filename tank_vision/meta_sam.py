@@ -7,7 +7,7 @@
 No HF gate, no GPU: SAM 3.1 is hosted at api.meta.ai, model id `sam-3.1`,
 text prompt + image in, boxes + masks out, billed per image against the
 hackathon Model API credits. The key comes from the environment ONLY —
-never from the repo, never printed. (AGENTS.md: API requests stay limited
+never from the repo, never printed. (API requests stay limited
 to deliberate demo input; this sends exactly the image + prompt given.)
 
 The parser is deliberately tolerant and the --probe mode dumps the raw

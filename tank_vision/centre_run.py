@@ -12,7 +12,7 @@ observed centroid motion; nothing assumes angle->direction mapping.
 
 Stops when centred (tol), target lost (empty SAM result), or step cap
 hit. Servos only — no motor path exists in this runner. Authorisation:
-run only with Adam present (see AGENTS.md).
+run only with an operator present.
 """
 
 import argparse

@@ -7,6 +7,7 @@ Run from tank_tools/:
     python3 test_xiaor_text_action.py
 """
 
+import os
 import unittest
 
 import xiaor_text_action as x
@@ -292,7 +293,7 @@ class LongestMatch(unittest.TestCase):
 class TankWire(unittest.TestCase):
     def test_generic_tank_auth_names(self):
         # Tank controls use generic auth, not the old chat-project names.
-        self.assertEqual(x.DEFAULT_TOKEN, "change-me")
+        self.assertEqual(x.DEFAULT_TOKEN, os.environ.get("TANK_TOKEN", ""))
         with open(x.__file__, encoding="utf-8") as f:
             src = f.read()
         self.assertIn('"X-Tank-Token"', src)
