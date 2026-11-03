@@ -888,6 +888,13 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+def startup_hint(args):
+    """Only when nothing is live and it isn't a demo, so a tank session stays quiet."""
+    if args.demo or args.enable_motors or args.enable_servo:
+        return ""
+    return "No robot? Restart with --demo to see what the controls would do."
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--bind", default="127.0.0.1")
@@ -975,6 +982,9 @@ def main(argv=None):
         srv.socket = _ctx.wrap_socket(srv.socket, server_side=True)
     print(f"serving on {scheme}://{args.bind}:{args.port}/ ({mode}; "
           f"{mmode}; {smode}; tap/text previews)", flush=True)
+    hint = startup_hint(args)
+    if hint:
+        print(hint, flush=True)
     srv.serve_forever()
 
 

@@ -2,6 +2,12 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-11-03 — No-robot tip at startup, quieter test output
+
+Starting the phone server with nothing live now prints a tip to use `--demo`. It stays
+quiet in a demo or with motors or servos on. The demo mode test no longer prints its
+expected error into `make test`, where it looked like a failure.
+
 ## 2026-11-03 — Demo mode for trying the page with no robot
 
 Someone without a tank used to see "Drive refused" on the sticks, and Launch drive
