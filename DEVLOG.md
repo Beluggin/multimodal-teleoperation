@@ -2,6 +2,24 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-11-02 — Raw mode, eval, Quickstart, CI, new layout
+
+Older entries use the old paths. Code now lives under `src/` and tests under
+`tests/`. Suites stayed green through the move; no behaviour change.
+
+Raw mode (`tank_control.py --raw`, `llama_raw.py`) sends typed words to Llama
+on Ollama with no parser. Stop skips the model, one bad move rejects the whole
+plan, moves are capped at 3 s, and a stop or manual key drops a pending answer.
+
+Verified: unit tests; the real driver in a pty against a fake listener and a
+fake slow model (a stop or manual key while it was thinking dropped the
+answer); `eval/language_eval.py` against a real Llama 3.1 8B on the desktop,
+17/18, where "do not turn left" came back as back up, turn right.
+Not yet verified at this entry: raw mode on the Pi or on the motors.
+
+Also fixed: bench tools and the driver read a path specific to one dev session,
+and Pillow was an undeclared dependency.
+
 ## 2026-11-01 — Showcase shows the drive loop's frames (no more black screen)
 
 Adam: in Showcase the phone screen goes black during a drive, and the

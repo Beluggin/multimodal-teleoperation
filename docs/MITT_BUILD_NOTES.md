@@ -49,6 +49,8 @@ Llama was the starting point, and it isn't in the final drive path. Getting 11/1
 
 So a fixed-phrase parser took over the front end, with stop always winning and anything unknown, negated or ambiguous moving nothing. Once the job became "go to that thing," the hard part was seeing, and that's SAM's.
 
+The baseline is still runnable as an optional raw mode (`tank_control.py --raw`), so the comparison can be repeated. Numbers are in [eval/README.md](../eval/README.md).
+
 There are still plenty of Meta fingerprints on this:
 
 - **SAM 3.1** through the Meta Model API is the vision. Every look in the drive loop is a SAM call.
