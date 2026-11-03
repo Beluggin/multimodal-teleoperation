@@ -1,0 +1,21 @@
+# Secrets: same list as .gitignore, so a local .env can't end up in an image.
+**/.env
+**/*.pem
+**/*.key
+**/bench_token*
+**/*token*.txt
+**/secrets.yaml
+
+# Not needed to run or test
+.git
+.github
+.venv
+**/__pycache__
+**/*.pyc
+vision_out
+docs
+train
+mc.jpg
+
+# XiaoR vendor files (proprietary; never redistributed)
+xiaor
