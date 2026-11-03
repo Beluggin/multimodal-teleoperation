@@ -9,7 +9,7 @@ settings went through Muse Glimmer 30B on a rented A100 80 GB. Dry-ran the code 
 tiny random model first. That showed random weights score 22/50, because rejected
 replies pass no-motion commands, so the results now count invalid replies. Modal
 refused the GPU until the account had a payment method, and interrupted the download
-once. Training took 19 minutes, with no interruption. $1.30 on the Modal bill.
+once. Training took 19 minutes, with no interruption. $1.46 on the Modal bill.
 
 Verified: tuned 50/50 and 18/18, stock 31/50 and 13/18, 0 invalid replies, 0 wrong
 moves for either. Stock's score is measured with its reasoning step skipped, and with
