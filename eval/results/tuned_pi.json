@@ -1,0 +1,237 @@
+{
+ "engine": "llama",
+ "model": "llama-3.2-3b-mitt-tank",
+ "cases_file": "commands.json",
+ "prompt": "tuned",
+ "note": "fine-tuned, Pi 5 4GB CPU, over ssh tunnel",
+ "date": "2026-11-03",
+ "passed": 18,
+ "total": 18,
+ "median_model_s": 4.189062051998917,
+ "cases": [
+  {
+   "text": "go forward",
+   "group": "plain",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 4.170862495011534,
+   "note": "go 1s"
+  },
+  {
+   "text": "back up",
+   "group": "plain",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 4.189062051998917,
+   "note": "rev 1s"
+  },
+  {
+   "text": "turn left",
+   "group": "plain",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 4.474362672001007,
+   "note": "spinl 0.65s"
+  },
+  {
+   "text": "turn right",
+   "group": "plain",
+   "expect": [
+    "spinr"
+   ],
+   "got": [
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": 4.379334732002462,
+   "note": "spinr 0.65s"
+  },
+  {
+   "text": "drive forward for 2 seconds",
+   "group": "plain",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 4.3059242319868645,
+   "note": "go 2s"
+  },
+  {
+   "text": "reverse",
+   "group": "plain",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 4.087636098993244,
+   "note": "rev 1s"
+  },
+  {
+   "text": "turn around",
+   "group": "plain",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 4.509738353008288,
+   "note": "spinl 1.25s"
+  },
+  {
+   "text": "turn left then go forward",
+   "group": "chain",
+   "expect": [
+    "spinl",
+    "go"
+   ],
+   "got": [
+    "spinl",
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 7.168684951000614,
+   "note": "spinl 0.65s, go 1s"
+  },
+  {
+   "text": "go forward then turn right then back up",
+   "group": "chain",
+   "expect": [
+    "go",
+    "spinr",
+    "rev"
+   ],
+   "got": [
+    "go",
+    "spinr",
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 10.060348605999025,
+   "note": "go 1s, spinr 0.65s, rev 1s"
+  },
+  {
+   "text": "stop",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": "stop word; model not asked"
+  },
+  {
+   "text": "emergency stop right now",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": "stop word; model not asked"
+  },
+  {
+   "text": "please halt",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": "stop word; model not asked"
+  },
+  {
+   "text": "don't go forward",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 1.5207291989936493,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "do not turn left",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 1.5163714740046998,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "what is your name",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 1.5776765170012368,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "tell me a joke",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 1.503375647997018,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "scoot ahead a little bit",
+   "group": "off script",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 4.135152860006201,
+   "note": "go 0.5s"
+  },
+  {
+   "text": "hang a left",
+   "group": "off script",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 4.2127120130026015,
+   "note": "spinl 0.65s"
+  }
+ ]
+}

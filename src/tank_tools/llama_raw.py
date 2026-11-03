@@ -16,12 +16,14 @@ Llama decides what the words mean. It doesn't get a say in these:
     can't choose speed or trim.
   - A stop or manual key pressed while Llama is thinking throws its answer away.
 
-Negation and ambiguity are NOT guaranteed here the way they are with the
-parser. That is the point of the comparison. Only the limits above are hard.
+Negation and ambiguity are NOT guaranteed here, and the parser only catches
+the wording it knows. That is the point of the comparison. Only the limits
+above are hard.
 
 Environment:
     OLLAMA_URL         default http://localhost:11434
     TANK_LLAMA_MODEL   default llama3.2:3b
+    TANK_LLAMA_PROMPT  set to "tuned" for the fine-tuned model's short prompt
 """
 import json
 import math
@@ -69,6 +71,11 @@ Examples:
 "don't go forward" -> {"moves": []}
 """
 
+# For the fine-tuned model, which learned the rules and examples above in training.
+# A shorter prompt leaves the Pi less to read on every command.
+TUNED_PROMPT = ("You turn one instruction into moves for a small tracked robot. "
+                "Reply with JSON only.")
+
 
 @dataclass
 class Plan:
@@ -85,12 +92,15 @@ def is_stop(text: str) -> bool:
 
 def ask_ollama(text: str, model: Optional[str] = None,
                url: Optional[str] = None,
-               timeout: float = TIMEOUT_S) -> str:
+               timeout: float = TIMEOUT_S,
+               system: Optional[str] = None) -> str:
     """One instruction -> the model's raw reply text. Raises on failure."""
     base = url or os.environ.get("OLLAMA_URL") or DEFAULT_URL
+    if system is None and os.environ.get("TANK_LLAMA_PROMPT") == "tuned":
+        system = TUNED_PROMPT
     body = json.dumps({
         "model": model or os.environ.get("TANK_LLAMA_MODEL") or DEFAULT_MODEL,
-        "system": SYSTEM_PROMPT,
+        "system": system or SYSTEM_PROMPT,
         "prompt": text,
         "format": "json",
         "stream": False,

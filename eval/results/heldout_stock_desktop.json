@@ -1,0 +1,608 @@
+{
+ "engine": "llama",
+ "model": "llama3.2:3b",
+ "cases_file": "heldout.json",
+ "prompt": "full",
+ "note": "stock, desktop GPU",
+ "date": "2026-11-03",
+ "passed": 42,
+ "total": 50,
+ "median_model_s": 0.4020798724995984,
+ "cases": [
+  {
+   "text": "move ahead",
+   "group": "paraphrase",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 2.5045698859976255,
+   "note": "go 1s"
+  },
+  {
+   "text": "roll forward",
+   "group": "paraphrase",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 0.4547127379992162,
+   "note": "go 1s"
+  },
+  {
+   "text": "advance",
+   "group": "paraphrase",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 0.4189967330021318,
+   "note": "go 1s"
+  },
+  {
+   "text": "head straight",
+   "group": "paraphrase",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 0.3880581639969023,
+   "note": "go 1s"
+  },
+  {
+   "text": "go backwards",
+   "group": "paraphrase",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.4019954629984568,
+   "note": "rev 1s"
+  },
+  {
+   "text": "back it up",
+   "group": "paraphrase",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.39075209900329355,
+   "note": "rev 1s"
+  },
+  {
+   "text": "retreat",
+   "group": "paraphrase",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.39822385599836707,
+   "note": "rev 1s"
+  },
+  {
+   "text": "rotate left",
+   "group": "paraphrase",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 0.4117135929991491,
+   "note": "spinl 0.65s"
+  },
+  {
+   "text": "swing right",
+   "group": "paraphrase",
+   "expect": [
+    "spinr"
+   ],
+   "got": [
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": 0.40478470899688546,
+   "note": "spinr 0.65s"
+  },
+  {
+   "text": "take a right",
+   "group": "paraphrase",
+   "expect": [
+    "spinr"
+   ],
+   "got": [
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": 0.4359303950041067,
+   "note": "spinr 0.65s"
+  },
+  {
+   "text": "veer left",
+   "group": "paraphrase",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 0.41787292400113074,
+   "note": "spinl 0.65s"
+  },
+  {
+   "text": "face the other way",
+   "group": "paraphrase",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 0.41174367000348866,
+   "note": "spinl 1.25s"
+  },
+  {
+   "text": "scooch back a bit",
+   "group": "slang",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.38384768000105396,
+   "note": "rev 1s"
+  },
+  {
+   "text": "hang a right",
+   "group": "slang",
+   "expect": [
+    "spinr"
+   ],
+   "got": [
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": 0.40695921199949225,
+   "note": "spinr 0.65s"
+  },
+  {
+   "text": "gun it",
+   "group": "slang",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 0.40216428200074006,
+   "note": "go 3s"
+  },
+  {
+   "text": "make a u-turn",
+   "group": "slang",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 0.4198760610015597,
+   "note": "spinl 1.25s"
+  },
+  {
+   "text": "do a 180",
+   "group": "slang",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 0.4061997890021303,
+   "note": "spinl 1.25s"
+  },
+  {
+   "text": "hit reverse",
+   "group": "slang",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.40663621600106126,
+   "note": "rev 1s"
+  },
+  {
+   "text": "pull forward a little",
+   "group": "slang",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 0.3979289039998548,
+   "note": "go 0.5s"
+  },
+  {
+   "text": "go forward for three seconds",
+   "group": "timed",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 0.39438082199922064,
+   "note": "go 3s"
+  },
+  {
+   "text": "reverse for half a second",
+   "group": "timed",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.3961909209974692,
+   "note": "rev 0.5s"
+  },
+  {
+   "text": "turn right for 1 second",
+   "group": "timed",
+   "expect": [
+    "spinr"
+   ],
+   "got": [
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": 0.432866932998877,
+   "note": "spinr 1s"
+  },
+  {
+   "text": "back up and then turn right",
+   "group": "chain",
+   "expect": [
+    "rev",
+    "spinr"
+   ],
+   "got": [
+    "rev",
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": 0.5488651470004697,
+   "note": "rev 2s, spinr 0.65s"
+  },
+  {
+   "text": "go forward and turn left",
+   "group": "chain",
+   "expect": [
+    "go",
+    "spinl"
+   ],
+   "got": [
+    "go",
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 0.5379230309990817,
+   "note": "go 1s, spinl 0.65s"
+  },
+  {
+   "text": "turn right, drive ahead, then reverse",
+   "group": "chain",
+   "expect": [
+    "spinr",
+    "go",
+    "rev"
+   ],
+   "got": [
+    "spinr",
+    "go",
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.6817719059981755,
+   "note": "spinr 0.65s, go 1s, rev 1s"
+  },
+  {
+   "text": "first turn left, then back up",
+   "group": "chain",
+   "expect": [
+    "spinl",
+    "rev"
+   ],
+   "got": [
+    "spinl",
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.5504613430020981,
+   "note": "spinl 0.65s, rev 1s"
+  },
+  {
+   "text": "spin right after you go forward",
+   "group": "chain",
+   "expect": [
+    "go",
+    "spinr"
+   ],
+   "got": [
+    "go",
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": 0.5345733680005651,
+   "note": "go 1s, spinr 0.65s"
+  },
+  {
+   "text": "before backing up, turn left",
+   "group": "chain",
+   "expect": [
+    "spinl",
+    "rev"
+   ],
+   "got": [
+    "spinl",
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 0.5498421430020244,
+   "note": "spinl 0.65s, rev 2s"
+  },
+  {
+   "text": "don't turn right",
+   "group": "negation",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2623906679946231,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "do not back up",
+   "group": "negation",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2794192919973284,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "never go forward",
+   "group": "negation",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2734364639982232,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "please don't move",
+   "group": "negation",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2772428349999245,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "no, don't reverse",
+   "group": "negation",
+   "expect": [],
+   "got": [
+    "rev"
+   ],
+   "pass": false,
+   "latency_s": 0.39347055699909106,
+   "note": "rev 1s"
+  },
+  {
+   "text": "avoid turning left",
+   "group": "negation",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2644044200060307,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "you shouldn't drive forward",
+   "group": "negation",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.27479592400050024,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "don't turn left, turn right",
+   "group": "negation",
+   "expect": [],
+   "got": [
+    "spinr"
+   ],
+   "pass": false,
+   "latency_s": 0.3979482630020357,
+   "note": "spinr 0.65s"
+  },
+  {
+   "text": "how are you",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.26804154900310095,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "what's the weather like",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2810392210012651,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "sing a song",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2809753730034572,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "good morning",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.28361229699657997,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "the cat is on the couch",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2735406290012179,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "i like turtles",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2698808260029182,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "turn on the lights",
+   "group": "trap",
+   "expect": [],
+   "got": [
+    "spinl",
+    "go"
+   ],
+   "pass": false,
+   "latency_s": 0.5401879489945713,
+   "note": "spinl 0.65s, go 1s"
+  },
+  {
+   "text": "turn the music down",
+   "group": "trap",
+   "expect": [],
+   "got": [
+    "rev"
+   ],
+   "pass": false,
+   "latency_s": 0.40957707300549373,
+   "note": "rev 1s"
+  },
+  {
+   "text": "what does go forward mean",
+   "group": "trap",
+   "expect": [],
+   "got": [
+    "go"
+   ],
+   "pass": false,
+   "latency_s": 0.3955685850014561,
+   "note": "go 1s"
+  },
+  {
+   "text": "left is my favourite direction",
+   "group": "trap",
+   "expect": [],
+   "got": [
+    "spinl"
+   ],
+   "pass": false,
+   "latency_s": 0.41355383100017207,
+   "note": "spinl 0.65s"
+  },
+  {
+   "text": "go get the ball",
+   "group": "trap",
+   "expect": [],
+   "got": [
+    "spinl",
+    "go"
+   ],
+   "pass": false,
+   "latency_s": 0.5393554010006483,
+   "note": "spinl 0.65s, go 1s"
+  },
+  {
+   "text": "pick up the ball",
+   "group": "trap",
+   "expect": [],
+   "got": [
+    "spinl",
+    "go"
+   ],
+   "pass": false,
+   "latency_s": 0.5382484880028642,
+   "note": "spinl 0.65s, go 1s"
+  },
+  {
+   "text": "look up",
+   "group": "trap",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.2720552980026696,
+   "note": "Llama chose no motion"
+  },
+  {
+   "text": "you're right",
+   "group": "trap",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.28256791199964937,
+   "note": "Llama chose no motion"
+  }
+ ]
+}

@@ -52,7 +52,7 @@
   <p class="notice">This is a report of recorded runs, not a live tank. The robot needs its hardware, so nothing here drives anything.</p>
 
   <iframe class="video" src="https://www.youtube-nocookie.com/embed/jEXv6ofJLUQ" title="MITT demo video" allowfullscreen></iframe>
-  <p class="muted" style="margin-top:8px"><a href="https://youtu.be/jEXv6ofJLUQ">Watch on YouTube</a> · <a href="https://github.com/Beluggin/multimodal-teleoperation">Code</a> · <a href="https://github.com/Beluggin/multimodal-teleoperation/blob/main/docs/MITT_BUILD_NOTES.md">Build notes</a></p>
+  <p class="muted" style="margin-top:8px"><a href="https://youtu.be/jEXv6ofJLUQ">Watch on YouTube</a> · <a href="https://github.com/Beluggin/multimodal-teleoperation">Code</a> · <a href="https://github.com/Beluggin/multimodal-teleoperation/blob/main/docs/MITT_BUILD_NOTES.md">Build notes</a> · <a href="https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank">Model</a> · Built with Llama</p>
 
   <h2>How a mission runs</h2>
   <p>Words become a target. The camera frame and the target go to <strong>Meta SAM 3.1</strong>. The tank turns toward what SAM finds, drives, checks that it has arrived, and moves on to the next target. If it loses the target, it backs up and looks, sweeps the neck, then turns the chassis. If nothing turns up, it stops.</p>
@@ -87,11 +87,24 @@
   </table></div>
   <p class="muted" style="margin-top:8px">This is a short list and both perfect scores are flattering: it was written with the parser's phrases known, and four commands also appear as examples in Llama's prompt. Stop words skip the model, so Llama saw 15 commands. The desktop model's miss: "do not turn left" came back as back up, then turn right. <a href="https://github.com/Beluggin/multimodal-teleoperation/tree/main/eval">How to read and reproduce this</a>.</p>
 
+  <h2>Fine-tuned Llama</h2>
+  <p>A <a href="https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank">LoRA fine-tune of Llama 3.2 3B</a> for raw mode, tested on 50 new commands written before training. It mainly learned when not to move.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Engine</th><th>Where</th><th>Passed</th><th>Moved when it shouldn't</th><th>Model time</th></tr></thead>
+    <tbody>
+      <tr><td>Fine-tuned Llama 3.2 3B</td><td>Raspberry Pi 5, 4 GB</td><td class="num">49/50</td><td class="num">0</td><td class="num">3.97 s median</td></tr>
+      <tr><td>Stock Llama 3.2 3B</td><td>same Pi</td><td class="num">45/50</td><td class="num">5</td><td class="num">4.16 s median</td></tr>
+      <tr><td>Fixed-phrase parser</td><td>any machine</td><td class="num">36/50</td><td class="num">6</td><td>none</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted" style="margin-top:8px">This is a small test written by this project. The negation and trap groups use the same kinds of sentences as training, so they aren't fully unseen. The gain is accuracy, not speed. The model only runs in raw mode, and the main path still uses the parser. <a href="https://github.com/Beluggin/multimodal-teleoperation/tree/main/eval">Details</a>.</p>
+
   <h2>Known limits</h2>
   <ul>
     <li>Motion is open loop. Short spins undershoot, and timing drifts with battery charge.</li>
     <li>Arrival is judged from the image, and some paths can report ARRIVED too early.</li>
     <li>With two cats in the room, it hunts whichever one it sees first.</li>
+    <li>The parser can still move on wording it doesn't recognize, such as "you shouldn't drive forward", and "you shouldn't go to the mug" starts a mission.</li>
     <li>The arm is manual only.</li>
   </ul>
 </main>

@@ -17,8 +17,8 @@ Pi deploy: copy this one file next to tank_server.py (same minimum set as
 tank_setup.md). --exec posts to $TANK_URL (default http://localhost:5000)
 with $TANK_TOKEN (no default; set it in the environment).
 
-Safety posture: unknown, negated ("don't ..."), and
-ambiguous ("forward and wave") inputs NEVER move. E-stop ("stop now",
+Safety aim (not a guarantee, see eval/README.md): unknown, negated ("don't ..."), and
+ambiguous ("forward and wave") inputs should not move. E-stop ("stop now",
 "emergency stop") skips claim and always sends emergency_stop. Read-only
 queries (sensors/status) skip claim too. "Go to/get the <target>" inputs
 classify as kind="goto" with NO commands: this parser never moves for

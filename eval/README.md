@@ -21,16 +21,55 @@ python3 eval/language_eval.py llama --model llama3.2:3b --note "where it ran" --
 
 How to read these:
 
-- **The parser's score is flattering.** This list was written with the parser's phrases known, and any phrase it doesn't know moves nothing, so it fails safe but misses a lot of natural speech. This shows it handles the listed commands. It doesn't show it understands English better than Llama.
+- **The parser's score is flattering.** This list was written with the parser's phrases known. On the 50 new commands below it scored 36/50 and moved on 7 of its 14 misses, so it does not always fail safe. Outside this list, "you shouldn't go to the mug" starts a mission. This shows it handles the listed commands. It doesn't show it understands English better than Llama.
 - **Stop isn't scored for the model.** Raw mode catches stop words before the model runs, so Llama saw 15 of the 18 commands.
 - **The Pi's 18/18 is flattering too.** Four test commands ("go forward", "turn left then go forward", "don't go forward", "what is your name") also appear word for word as examples in the system prompt, and it's one pass at temperature 0 on a short list. It shows the prompt works, not that the Pi model is reliable.
 - **A bigger model did worse.** On the desktop, Llama 3.1 8B answered "do not turn left" with back up, then turn right. A negated command made it move, which is why the main path doesn't leave language to a model.
 - **Raw mode costs time.** The Pi's 3.86 s median is slower than the old ~2.1 s, probably because of the longer prompt and JSON reply, but that was not tested separately. A chain of three moves took 9.12 s, and the first call after a cold load took 42.55 s.
 - **The older baseline is a different test.** The 11/18 and ~2.1 s in the [build notes](../docs/MITT_BUILD_NOTES.md) are Llama 3.2 3B on the Pi against an earlier command list, which isn't in this repo. Don't compare those scores with these.
 
+## Fine-tuned Llama on 50 new commands
+
+[`heldout.json`](heldout.json) was written before any training and wasn't used to tune anything. A LoRA fine-tune of Llama 3.2 3B was then trained on [generated examples](../train/) that leave out every whole command in both test lists. The model is on [Hugging Face](https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank).
+
+| Engine | Where | 50 new commands | Moved when it shouldn't | Median model time |
+|---|---|---|---|---|
+| Fine-tuned, short prompt | Raspberry Pi 5, 4 GB, CPU | 49/50 | 0 | 3.97 s |
+| Stock Llama 3.2 3B, full prompt | same Pi | 45/50 | 5 | 4.16 s |
+| Fine-tuned, short prompt | desktop | 49/50 | 0 | 0.39 s |
+| Stock Llama 3.2 3B, full prompt | desktop | 42/50 | 8 | 0.40 s |
+| Fixed-phrase parser | any machine | 36/50 | 6 | none |
+
+The fine-tune also passed the 18 commands above on both machines (4.19 s median on the Pi, against stock's 3.86 s).
+
+- **The gain is accuracy, not speed.** The shorter prompt was expected to save time on the Pi, and it made no clear difference.
+- **It's not fully unseen.** The negation and trap groups use the same kinds of sentences as training ("turn on the fan" in training, "turn on the lights" in the test). Rarer driving words like "advance" and "veer" were kept out.
+- **The one miss failed safely.** "do a 180" came back with a move that doesn't exist, so the reply check rejected the plan.
+- **Stock scored 42 on one machine and 45 on the other,** with the same model and temperature 0. That's unexplained, so treat small gaps as noise.
+- **Some answers are judgment calls.** "don't turn left, turn right" counts as no motion, because the rule is that any negation means don't move. Stock's and the parser's right turn is arguably what the person meant.
+- **The parser's other miss that moved wrongly** was "before backing up, turn left", which turned but never backed up. That's why the table says 6 where the text above says 7.
+- **The main drive path still uses the parser.** The fine-tune beat it on this list but has only run in raw mode, not in missions.
+
+## Fine-tuned Llama on the tank
+
+Eight steps on the floor, using the fine-tune on the Pi at 30% power on Nov 3. The moves are from the driver's log, and "On the floor" is what a person watching saw, by eye. It's one pass, not a reliability trial.
+
+| Command | Llama's answer | Model time | On the floor |
+|---|---|---|---|
+| `go forward` | `go` 1 s | 3.8 s | About 30 cm |
+| `turn left` | `spinl` 0.65 s | 4.0 s | About 85° |
+| `do not turn left` | no motion | not logged | Didn't move |
+| `turn left then go forward` | `spinl` 0.65 s, `go` 1 s | 6.5 s | Almost 90°, then forward |
+| `go forward`, then `stop` 1 s later | answer thrown away | n/a | Didn't move; this one tests the code, not the model |
+| `scoot ahead a little bit` | `go` 0.5 s | 3.7 s | About 20 cm |
+| `pick up the ball` | no motion | not logged | Didn't move (stock turned left) |
+| `what does go forward mean` | no motion | not logged | Didn't move (stock drove forward) |
+
+Stock's answers in brackets are from the test runs above, not from the floor.
+
 ## Raw mode on the tank
 
-Six steps on the floor, using Llama 3.2 3B on the Pi at 30% power on Nov 2. The moves are from the driver's log, and "On the floor" is what a person watching saw, by eye. It's one pass, not a reliability trial.
+Six steps on the floor, using stock Llama 3.2 3B on the Pi at 30% power on Nov 2. The moves are from the driver's log, and "On the floor" is what a person watching saw, by eye. It's one pass, not a reliability trial.
 
 | Command | Llama's answer | Model time | On the floor |
 |---|---|---|---|

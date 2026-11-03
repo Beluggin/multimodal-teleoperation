@@ -2,6 +2,22 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-11-03 — Fine-tuned Llama for raw mode
+
+Wrote `eval/heldout.json` (50 commands) first, then a generated training set
+(`train/make_dataset.py`) that leaves out every whole test command. LoRA on
+Llama 3.2 3B, 3 epochs, about 8.5 minutes on an RTX 4060. A first run ran out of
+memory because `prepare_model_for_kbit_training` cast the embeddings to 32-bit.
+
+Verified: fine-tune 49/50 and 18/18 on both the Pi and the desktop. Stock 45/50
+on the Pi, 42/50 on the desktop. Parser 36/50. No clear speed change on the Pi.
+Eight floor steps at 30% with a person watching, all as expected.
+
+Found: the parser moved on 7 of its 14 misses on the new list ("you shouldn't
+drive forward", "you're right"), and "you shouldn't go to the mug" starts a
+mission, so the docs' "moves nothing" claim was too strong. Docs corrected.
+Parser behaviour not changed in this commit.
+
 ## 2026-11-02 — Raw mode, eval, Quickstart, CI, new layout
 
 Older entries use the old paths. Code now lives under `src/` and tests under

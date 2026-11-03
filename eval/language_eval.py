@@ -38,11 +38,13 @@ def run_parser(text):
     return moves, None, ""
 
 
-def run_llama(text, model):
-    plan = llama_raw.interpret(text, lambda t: llama_raw.ask_ollama(t, model=model))
+def run_llama(text, model, system=None):
+    plan = llama_raw.interpret(
+        text, lambda t: llama_raw.ask_ollama(t, model=model, system=system))
     if plan.stop:
         return ["stop"], None, "stop word; model not asked"
-    return [m for m, _ in plan.moves], plan.latency_s, plan.reason
+    note = plan.reason or ", ".join(f"{m} {s:g}s" for m, s in plan.moves)
+    return [m for m, _ in plan.moves], plan.latency_s, note
 
 
 def main():
@@ -51,16 +53,20 @@ def main():
     ap.add_argument("--model", default=llama_raw.DEFAULT_MODEL)
     ap.add_argument("--note", default="", help="where this ran, saved with the results")
     ap.add_argument("--out")
+    ap.add_argument("--cases", default="commands.json", help="test list in eval/")
+    ap.add_argument("--prompt", choices=["full", "tuned"], default="full",
+                    help="tuned is the short prompt the fine-tuned model trained with")
     args = ap.parse_args()
+    system = llama_raw.TUNED_PROMPT if args.prompt == "tuned" else None
 
-    with open(os.path.join(HERE, "commands.json"), encoding="utf-8") as f:
+    with open(os.path.join(HERE, args.cases), encoding="utf-8") as f:
         cases = json.load(f)
     rows = []
     for case in cases:
         if args.engine == "parser":
             got, secs, note = run_parser(case["text"])
         else:
-            got, secs, note = run_llama(case["text"], args.model)
+            got, secs, note = run_llama(case["text"], args.model, system)
         ok = got == case["expect"]
         rows.append({"text": case["text"], "group": case["group"], "expect": case["expect"],
                      "got": got, "pass": ok, "latency_s": secs, "note": note})
@@ -74,6 +80,7 @@ def main():
         print(f"model time: median {statistics.median(times):.2f}s, first {times[0]:.2f}s (may include a cold load)")
     if args.out:
         result = {"engine": args.engine, "model": args.model if args.engine == "llama" else None,
+                  "cases_file": args.cases, "prompt": args.prompt if args.engine == "llama" else None,
                   "note": args.note, "date": time.strftime("%Y-%m-%d"),
                   "passed": passed, "total": len(rows),
                   "median_model_s": statistics.median(times) if times else None, "cases": rows}

@@ -43,6 +43,8 @@ python3 -m tank_vision.drive_run --text "go to the blue ball" --tandem
 
 Raw mode needs [Ollama](https://ollama.com) and `ollama pull llama3.2:3b`. Then run `python3 src/tank_tools/tank_control.py --raw`, press `t`, and type an instruction. Stop skips the model, but Llama can misread anything else, including negated commands. Every move stays capped at 3 s.
 
+To use the fine-tuned model, get the GGUF and Modelfile from [Hugging Face](https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank), run `ollama create llama-3.2-3b-mitt-tank -f Modelfile`, then set `TANK_LLAMA_MODEL=llama-3.2-3b-mitt-tank` and `TANK_LLAMA_PROMPT=tuned`.
+
 ## What it does
 
 - **Phone remote**: dual-thumbstick driving, a drag-to-pose arm, live camera, telemetry, and voice or typed commands (`src/tank_phone/`).
@@ -60,6 +62,7 @@ Raw mode needs [Ollama](https://ollama.com) and `ollama pull llama3.2:3b`. Then 
 - **Muse, Meta's coding agent**, built much of the stack, including recovering the XiaoR servo protocol at I2C `0x17` (`FF ch angle FF`) from the vendor's compiled module. See [`src/tank_tools/servo_0x17_protocol.md`](src/tank_tools/servo_0x17_protocol.md). `src/tank_phone/servo_ctl.py` drives the servos directly, with no vendor code.
 - **Muse Spark Open** (`muse-spark-open-1026`), served through Baseten, is wired in as the fallback when the parser doesn't know a phrase. It can only propose a sentence, and that sentence must still pass the parser (`src/tank_speech/`).
 - **Llama 3.2** on the Pi was the starting point. It is not in the main drive path, and the build notes explain why. It's still runnable as an optional raw mode, words to moves with no parser, so the baseline can be compared with the full pipeline (`src/tank_tools/llama_raw.py`, [results](eval/README.md)).
+- **[Llama-3.2-3B-MITT-Tank](https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank)** is a LoRA fine-tune of Llama 3.2 3B for raw mode, published on Hugging Face. It scored 49/50 on new commands against stock's 45/50 on the same Pi, and mainly learned when not to move ([results](eval/README.md), [training](train/README.md)).
 
 The stock XiaoR stack is fully replaced: the repo's own motor listener and bench-measured motor map (`src/tank_bench/`), the recovered servo protocol, and a small C MJPEG grabber (`src/tank_phone/qstream.c`).
 
@@ -86,7 +89,7 @@ More measurements are in [eval/README.md](eval/README.md). The log holds 14 chai
 - Motors run through a token-gated listener on the Pi. Every move is capped at 3 s and 40% power, and the listener exits after an hour.
 - A dropped connection, a bad line or an exit drives all pins low.
 - Each drive is capped in steps. On any error the runner sends a stop.
-- Stop wins. Unknown, negated or ambiguous language moves nothing, with one known exception: *"dance then go to the mug"* still goes to the mug.
+- Stop wins. Unknown, negated or ambiguous language is meant to move nothing, with known exceptions: *"dance then go to the mug"* still goes to the mug, and negators or phrasing it doesn't recognize can still move it (*"you shouldn't drive forward"*, *"you're right"*, and for missions *"you shouldn't go to the mug"*). See [evaluation](eval/README.md).
 - No keys or tokens in this repo. They come from the environment only.
 
 ## Layout
@@ -119,4 +122,4 @@ The robot is a **XiaoR Geek** tank kit (Raspberry Pi 5 "V2" control board). Xiao
 
 ## Built with
 
-Built by Adam with AI coding agents: Meta's Muse, Anthropic's Claude and OpenAI's Codex. The hardware tests were run in person on a living-room floor.
+**Built with Llama.** Built by Adam with AI coding agents: Meta's Muse, Anthropic's Claude and OpenAI's Codex. The hardware tests were run in person on a living-room floor.

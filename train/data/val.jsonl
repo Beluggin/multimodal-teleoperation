@@ -1,0 +1,111 @@
+{"text": "go forward for 1 sec", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}]}", "group": "timed"}
+{"text": "you should go left for 2 seconds, then pivot right", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 2.0}, {\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "drive backward after you move forward", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}, {\"move\": \"rev\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "drive safely", "target": "{\"moves\": []}", "group": "trap"}
+{"text": "could you put it in reverse", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "do not ever drive forward", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "turn back the way you came please", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 1.25}]}", "group": "plain"}
+{"text": "could you go on ahead", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "go ahead and tell me a joke", "target": "{\"moves\": []}", "group": "trap"}
+{"text": "pivot to the left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "one and a half seconds of back up", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.5}]}", "group": "timed"}
+{"text": "what is a left turn", "target": "{\"moves\": []}", "group": "trap"}
+{"text": "ok steer left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "please spin right after that drive forward for 3 seconds", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"go\", \"secs\": 3.0}]}", "group": "chain"}
+{"text": "do not spin right, turn left instead", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "don't back up, go ahead", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "could you go right next drive ahead", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"go\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "would you turn back the way you came", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 1.25}]}", "group": "plain"}
+{"text": "go right. then go left for 2 seconds after that pivot right for 1 second", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"spinl\", \"secs\": 2.0}, {\"move\": \"spinr\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "i want you to spin right, then drive backward after that spin right", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "my brother went forward with the plan", "target": "{\"moves\": []}", "group": "trap"}
+{"text": "ok turn counterclockwise", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "would you turn to the right", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "go right 0.5 seconds", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.5}]}", "group": "timed"}
+{"text": "turn all the way around", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 1.25}]}", "group": "plain"}
+{"text": "you should go left and then spin right for 1 second", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}, {\"move\": \"spinr\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "please drive ahead for 2 seconds and turn right", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 2.0}, {\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "now drive forward", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "could you drive straight", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "drive forward for 0.5 seconds", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 0.5}]}", "group": "timed"}
+{"text": "don't you dare drive", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "reverse a lot", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 2.0}]}", "group": "size"}
+{"text": "better not go back", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "spin left for about a quarter of a second", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.25}]}", "group": "timed"}
+{"text": "turn left 135 degrees", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.98}]}", "group": "size"}
+{"text": "before turning left, move backward", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "please first reverse, then move forward, spin left and then drive backward", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"go\", \"secs\": 1.0}, {\"move\": \"spinl\", \"secs\": 0.65}, {\"move\": \"rev\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "drive forward a little", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 0.5}]}", "group": "size"}
+{"text": "how do you say turn right in french", "target": "{\"moves\": []}", "group": "trap"}
+{"text": "go forward far", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 2.0}]}", "group": "size"}
+{"text": "why is the sky blue", "target": "{\"moves\": []}", "group": "no motion"}
+{"text": "skip the left turn", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "move backward a tiny bit", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 0.5}]}", "group": "size"}
+{"text": "ok go right", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "hello there", "target": "{\"moves\": []}", "group": "no motion"}
+{"text": "do not spin right, reverse instead", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "go back; move backward please", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"rev\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "don't try going forward", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "pivot to the right", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "spin right after you pivot left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}, {\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "could you go ahead for 0.5 seconds; move forward. then go back, then pivot right for 1.5 seconds", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 0.5}, {\"move\": \"go\", \"secs\": 1.0}, {\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinr\", \"secs\": 1.5}]}", "group": "chain"}
+{"text": "before reversing, pivot left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}, {\"move\": \"rev\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "do not ever pivot left", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "tank, make a left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "turn right for 3 seconds", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 3.0}]}", "group": "timed"}
+{"text": "move backwards", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "turn yourself around", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 1.25}]}", "group": "plain"}
+{"text": "did you go forward", "target": "{\"moves\": []}", "group": "trap"}
+{"text": "please move backward. then spin right for 2.5 seconds and then go back and pivot right for 1 second", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinr\", \"secs\": 2.5}, {\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinr\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "no moving", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "drive backward", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "hey tank turn clockwise", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "back up far", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 2.0}]}", "group": "size"}
+{"text": "go right and then spin left", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "reverse up", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "turn right for sixty seconds", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 3.0}]}", "group": "timed"}
+{"text": "back up then turn left", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "move backward for one sec", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "timed"}
+{"text": "ok spin left slightly", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.33}]}", "group": "size"}
+{"text": "would you pivot right after that go back", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"rev\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "before backing up, move forward", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}, {\"move\": \"rev\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "please drive backward next go back after that turn right", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "whose turn is it", "target": "{\"moves\": []}", "group": "trap"}
+{"text": "bank right now", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "um", "target": "{\"moves\": []}", "group": "no motion"}
+{"text": "could you turn right; go left", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "ok move backward for 2.5 seconds, then pivot left, drive ahead", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 2.5}, {\"move\": \"spinl\", \"secs\": 0.65}, {\"move\": \"go\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "can you move backwards", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "back away", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "now turn to the left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "can you spin right and drive ahead", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"go\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "could you push forward", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "hey tank turn to your left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "hold off on going forward", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "do not ever go forward", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "please go backward", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "turn right for 1.5 secs", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 1.5}]}", "group": "timed"}
+{"text": "do not drive backward", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "now go right; back up and drive forward", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"go\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "after you go back, pivot left", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinl\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "go right now", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "ease backward please", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "make a right", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "plain"}
+{"text": "thank you so much", "target": "{\"moves\": []}", "group": "no motion"}
+{"text": "spin right 0.5 seconds", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.5}]}", "group": "timed"}
+{"text": "you should move in reverse", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}", "group": "plain"}
+{"text": "you should reverse then spin right; drive forward", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"go\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "don't back up yet", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "not allowed to move", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "now move backward, drive ahead", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"go\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "go right but don't go back", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "could you go right slightly", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.33}]}", "group": "size"}
+{"text": "refrain from backing up", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "turn right 180 degrees", "target": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 1.25}]}", "group": "size"}
+{"text": "before backing up, spin left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}, {\"move\": \"rev\", \"secs\": 1.0}]}", "group": "chain"}
+{"text": "do not move backward", "target": "{\"moves\": []}", "group": "negation"}
+{"text": "spin 45 degrees to the left", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.33}]}", "group": "size"}
+{"text": "ok turn left. then spin right", "target": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}, {\"move\": \"spinr\", \"secs\": 0.65}]}", "group": "chain"}
+{"text": "you should drive forward. then go left for 2 seconds and then go back for 0.5 seconds. then go ahead for 3 seconds", "target": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}, {\"move\": \"spinl\", \"secs\": 2.0}, {\"move\": \"rev\", \"secs\": 0.5}, {\"move\": \"go\", \"secs\": 3.0}]}", "group": "chain"}
+{"text": "hey tank back up and then spin right for 3 seconds", "target": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}, {\"move\": \"spinr\", \"secs\": 3.0}]}", "group": "chain"}
+{"text": "don't go right, go ahead", "target": "{\"moves\": []}", "group": "negation"}
