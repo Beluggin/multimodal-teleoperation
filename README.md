@@ -23,7 +23,7 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 make test    # all test suites, using fakes for the hardware and network
 make eval    # scores the language parser
-python3 src/tank_phone/server.py --port 8123    # the phone page at localhost:8123, motors and servos off
+python3 src/tank_phone/server.py --port 8123 --demo    # the phone page at localhost:8123, no robot
 ```
 
 Or with Docker, which runs the same things:
@@ -36,6 +36,8 @@ docker run --rm -p 127.0.0.1:8123:8123 mitt    # the phone page at localhost:812
 ```
 
 The container can't reach a robot, so it's for trying the software. Motors, servos and the camera need the Pi, using the steps below.
+
+With `--demo`, which the container uses by default, the language parser is real. The sticks and Launch drive only show "Simulated, hardware not available". There's no fake mission, camera or SAM call, so to see those working, watch [the demo](https://youtu.be/jEXv6ofJLUQ).
 
 With a XiaoR tank, run these only with someone watching it:
 

@@ -9,6 +9,10 @@ the tank. Servo writes speak the proven 0x17 frame via servo_ctl.py
 (channels 1-6); motors speak the bench-listener protocol (:5098, token
 read from a Pi-local file, never sent to the phone).
 
+Try it with no robot (--demo labels every control as simulated, and never
+talks to motors, servos or the desktop launcher):
+    python3 src/tank_phone/server.py --port 8123 --demo
+
 Desktop smoke (no hardware touched):
     python3 src/tank_phone/server.py --port 8123
     curl localhost:8123/api/status
@@ -37,6 +41,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+SIMULATED = "Simulated, hardware not available."
 # The desktop drive loop (src/tank_vision/centre_run.grab) writes each look
 # here with qstream while it owns the camera.
 DRIVE_FRAME = "/tmp/centre_frame.jpg"
@@ -478,6 +483,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"ok": True,
                         "servo_enabled": bool(getattr(self.server,
                                                       "servo_enabled", False)),
+                        "demo": bool(getattr(self.server, "demo", False)),
                         "note": "tap/text are previews; servo sliders live "
                                 "only when servo_enabled"})
         elif path == "/api/speech/status":
@@ -513,6 +519,7 @@ class Handler(BaseHTTPRequestHandler):
                 "ok": True,
                 "servo_enabled": bool(getattr(s, "servo_enabled", False)),
                 "motor_enabled": bool(getattr(s, "motor_enabled", False)),
+                "demo": bool(getattr(s, "demo", False)),
                 "motor_cap": getattr(s, "motor_cap", HARD_DUTY_CAP),
                 "servo": self._servo_payload() if servo_ctl else None,
                 "speech": (_SpeechConfig.from_env().status()
@@ -656,6 +663,16 @@ class Handler(BaseHTTPRequestHandler):
                      "error": f"only a goto can launch ({a.kind})"},
                     code=400)
             st = self._launch_status()
+            if getattr(self.server, "demo", False):
+                # Never "pending", so a launcher can't consume it, and never
+                # "done", so it can't read as a mission that happened.
+                self.server.launch_status = {
+                    "state": "simulated", "text": text, "target": a.target,
+                    "detail": SIMULATED + " Nothing moved and SAM wasn't called.",
+                    "stop_requested": False}
+                return self._json({"ok": True, "simulated": True,
+                                   "state": "simulated", "target": a.target,
+                                   "detail": self.server.launch_status["detail"]})
             if st["state"] in ("pending", "running"):
                 return self._json({"ok": False,
                                    "error": "a drive is already active"},
@@ -706,6 +723,9 @@ class Handler(BaseHTTPRequestHandler):
             mv["duty"] = min(mv["duty"],
                              float(getattr(self.server, "motor_cap",
                                            HARD_DUTY_CAP)))
+            if mv["move"] != "stop" and getattr(self.server, "demo", False):
+                return self._json({"ok": True, "simulated": True, **mv,
+                                   "note": SIMULATED})
             if mv["move"] != "stop" and not getattr(
                     self.server, "motor_enabled", False):
                 return self._json({"ok": False,
@@ -749,6 +769,9 @@ class Handler(BaseHTTPRequestHandler):
             # right, which is ch6 DOWN; stick up must tilt up, ch5 UP.
             step_pan = int(round(max(-1.0, min(1.0, x)) * -3))
             step_tilt = int(round(max(-1.0, min(1.0, y)) * -3))
+            if getattr(self.server, "demo", False):
+                return self._json({"ok": True, "simulated": True,
+                                   "note": SIMULATED})
             if not getattr(self.server, "servo_enabled", False):
                 return self._json({"ok": False,
                                    "error": "servo live control disabled"},
@@ -869,6 +892,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--bind", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8123)
+    ap.add_argument("--demo", action="store_true",
+                    help="no robot: label controls as simulated, send nothing")
     ap.add_argument("--enable-servo", action="store_true",
                     help="LIVE servo writes via sliders (Adam present only)")
     ap.add_argument("--servo-device", default="/dev/i2c-1")
@@ -887,7 +912,10 @@ def main(argv=None):
     ap.add_argument("--tls-key", default="",
                     help="PEM key matching --tls-cert")
     args = ap.parse_args(argv)
+    if args.demo and (args.enable_motors or args.enable_servo):
+        ap.error("--demo can't be combined with --enable-motors or --enable-servo")
     srv = ThreadingHTTPServer((args.bind, args.port), Handler)
+    srv.demo = bool(args.demo)
     srv.motor_enabled = bool(args.enable_motors)
     srv.motor_cap = max(0.0, min(HARD_DUTY_CAP, args.motor_cap))
     srv.motor_client = None

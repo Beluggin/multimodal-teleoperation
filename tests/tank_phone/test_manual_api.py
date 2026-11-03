@@ -201,5 +201,63 @@ class DriveFrame(unittest.TestCase):
         self.assertEqual(self.get()[0], 204)
 
 
+class DemoMode(unittest.TestCase):
+    def setUp(self):
+        self.s = ThreadingHTTPServer(("127.0.0.1", 0), srv.Handler)
+        self.s.demo = True
+        self.s.motor_enabled = False
+        self.s.motor_client = None
+        self.s.servo_enabled = False
+        self.port = self.s.server_address[1]
+        threading.Thread(target=self.s.serve_forever, daemon=True).start()
+        self.addCleanup(self.s.server_close)
+        self.addCleanup(self.s.shutdown)
+
+    def test_drive_is_labelled_simulated(self):
+        code, body = call(self.port, "POST", "/api/drive", {"x": 0, "y": -1, "cap": 30})
+        self.assertEqual(code, 200)
+        self.assertTrue(body["simulated"])
+        self.assertEqual(body["move"], "go")
+
+    def test_camera_is_labelled_simulated(self):
+        code, body = call(self.port, "POST", "/api/camera", {"x": 1, "y": 0})
+        self.assertEqual(code, 200)
+        self.assertTrue(body["simulated"])
+
+    def test_launch_cannot_reach_the_launcher_or_read_as_done(self):
+        code, body = call(self.port, "POST", "/api/launch", {"text": "go to the blue ball"})
+        self.assertEqual(code, 200)
+        self.assertEqual(body["state"], "simulated")
+        self.assertEqual(call(self.port, "POST", "/api/launch/consume", {})[0], 409)
+        self.assertEqual(call(self.port, "GET", "/api/launch")[1]["launch"]["state"], "simulated")
+
+    def test_parser_still_refuses_for_real(self):
+        code, body = call(self.port, "POST", "/api/text", {"text": "don't go to the ball"})
+        self.assertEqual(body["kind"], "refused")
+        code, body = call(self.port, "POST", "/api/launch", {"text": "don't go to the ball"})
+        self.assertEqual(code, 400)
+        self.assertFalse(body["ok"])
+
+    def test_telemetry_reports_demo(self):
+        self.assertTrue(call(self.port, "GET", "/api/telemetry")[1]["demo"])
+
+    def test_demo_cannot_combine_with_live_flags(self):
+        for flag in ("--enable-motors", "--enable-servo"):
+            with self.assertRaises(SystemExit):
+                srv.main(["--demo", flag])
+
+
+class WithoutDemo(unittest.TestCase):
+    def test_drive_still_refused_without_motors(self):
+        s = ThreadingHTTPServer(("127.0.0.1", 0), srv.Handler)
+        s.motor_enabled = False
+        threading.Thread(target=s.serve_forever, daemon=True).start()
+        self.addCleanup(s.server_close)
+        self.addCleanup(s.shutdown)
+        code, body = call(s.server_address[1], "POST", "/api/drive", {"x": 0, "y": -1, "cap": 30})
+        self.assertEqual(code, 403)
+        self.assertNotIn("simulated", body)
+
+
 if __name__ == "__main__":
     unittest.main()

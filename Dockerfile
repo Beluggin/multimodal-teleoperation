@@ -21,4 +21,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
 
 # 0.0.0.0 is inside the container only. `docker run -p 127.0.0.1:8123:8123`
 # decides who can reach it. Motors and servos stay off without their flags.
-CMD ["python3", "src/tank_phone/server.py", "--bind", "0.0.0.0", "--port", "8123"]
+CMD ["python3", "src/tank_phone/server.py", "--bind", "0.0.0.0", "--port", "8123", "--demo"]

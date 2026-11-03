@@ -149,6 +149,7 @@
 </style>
 </head>
 <body>
+<div id="demoBanner" hidden style="position:fixed;left:0;right:0;top:58px;z-index:50;padding:4px 8px;background:#7a4b00;color:#fff;font:600 12px system-ui,sans-serif;text-align:center">Simulated, hardware not available. Nothing here moves a robot.</div>
 <div id="stage">
   <img id="cam" src="/api/frame" alt="camera" draggable="false">
   <img id="driveview" alt="what the drive loop sees" hidden>
@@ -281,7 +282,7 @@ const post = async (path, body) => {
   return data;
 };
 const get = async (path) => (await fetch(path)).json();
-let servoEnabled = false, motorEnabled = false, lastMs = null;
+let servoEnabled = false, motorEnabled = false, demoMode = false, lastMs = null;
 
 // ---------- plain-English status (showcase) ----------
 function setStatus(big, sub) {
@@ -291,7 +292,9 @@ function setStatus(big, sub) {
 function describeParsed(r, text) {
   if (!r.ok) return ['Not sent', r.error || 'server refused it'];
   const map = {
-    goto: [`Looking for: ${r.target}`, 'Ready — tap Launch drive and the tank will go. Nothing has moved yet.'],
+    goto: [`Looking for: ${r.target}`, demoMode
+      ? 'Ready — Launch drive is simulated here, because hardware isn\u2019t available.'
+      : 'Ready — tap Launch drive and the tank will go. Nothing has moved yet.'],
     drive: ['Drive command parsed', `${r.label} — preview only, no motion sent from Showcase.`],
     arm: ['Arm command parsed', `${r.label} — preview only, no motion sent from Showcase.`],
     camera: ['Camera command parsed', `${r.label} — preview only, no motion sent from Showcase.`],
@@ -355,22 +358,25 @@ async function sendDrive(x, y, force) {
   const cap = Number($('cap').value);
   const r = await post('/api/drive', {x, y, cap});
   lastMs = r._ms;
-  if (!r.ok && (x || y)) {
+  if (r.simulated) {
+    $('drivenote').textContent = `${r.note} Would send: ${r.move} at ${Math.round(r.duty)}%.`;
+  } else if (!r.ok && (x || y)) {
     $('drivenote').textContent = r.error || 'drive refused';
     setStatus('Drive refused', r.error || '');
-  } else if (r.ok && (x || y)) {
+  } else if (r.ok && (demoMode || x || y)) {
     $('drivenote').textContent = '';
   }
   return r;
 }
 makeStick($('stickDrive'), (x, y) => { driveVec = {x, y}; if (!x && !y) sendDrive(0, 0, true); });
-makeStick($('stickCam'), (x, y) => { camVec = {x, y}; });
+makeStick($('stickCam'), (x, y) => { camVec = {x, y}; if (demoMode && !x && !y) $('drivenote').textContent = ''; });
 setInterval(async () => {
   if (mode !== 'manual') return;
   if (driveVec.x || driveVec.y) sendDrive(driveVec.x, driveVec.y, false);
   if (camVec.x || camVec.y) {
     const r = await post('/api/camera', {x: camVec.x, y: camVec.y});
-    if (r.ok) { servoState = r.state; drawArm(); renderServoVals(); $('drivenote').textContent = ''; }
+    if (r.simulated) $('drivenote').textContent = r.note + ' Would move the camera.';
+    else if (r.ok) { servoState = r.state; drawArm(); renderServoVals(); $('drivenote').textContent = ''; }
     else $('drivenote').textContent = r.error || 'camera refused';
   }
 }, 140);
@@ -482,6 +488,10 @@ async function refreshLaunch() {
       setStatus('Drive failed', L.detail || '');
       $('launchNote').textContent = L.detail || 'Failed.';
       stopLaunchPolling();
+    } else if (L.state === 'simulated') {
+      setStatus('Simulated: ' + (L.target || ''), L.detail || '');
+      $('launchNote').textContent = L.detail || '';
+      stopLaunchPolling();
     } else if (L.state === 'stopped') {
       setStatus('Stopped', L.detail || 'Drive stopped.');
       $('launchNote').textContent = L.detail || 'Stopped.';
@@ -497,6 +507,11 @@ $('launchBtn').addEventListener('click', async () => {
   const r = await post('/api/launch', {text: lastGotoText});
   if (!r.ok) {
     $('launchNote').textContent = r.error || 'Launch refused.';
+    return;
+  }
+  if (r.simulated) {
+    setStatus('Simulated: ' + r.target, r.detail);
+    $('launchNote').textContent = r.detail;
     return;
   }
   // The drive loop needs the USB camera: pause our feed so its
@@ -1020,7 +1035,8 @@ async function loadServos() {
 async function refreshPills() {
   try {
     const t = await get('/api/telemetry');
-    servoEnabled = !!t.servo_enabled; motorEnabled = !!t.motor_enabled;
+    servoEnabled = !!t.servo_enabled; motorEnabled = !!t.motor_enabled; demoMode = !!t.demo;
+    $('demoBanner').hidden = !demoMode;
     $('pillServo').textContent = servoEnabled ? 'SERVO LIVE' : 'SERVO OFF';
     $('pillServo').className = 'pill ' + (servoEnabled ? 'live' : 'off');
     $('pillMotor').textContent = motorEnabled ? 'MOTOR LIVE' : 'MOTOR OFF';

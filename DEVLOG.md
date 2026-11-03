@@ -2,6 +2,22 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-11-03 — Demo mode for trying the page with no robot
+
+Someone without a tank used to see "Drive refused" on the sticks, and Launch drive
+waited for the desktop launcher forever, which looks broken. `server.py --demo` now
+labels those as "Simulated, hardware not available", with a banner. The README
+Quickstart and the Docker container use it. The language parser is still real, so a
+negated command is still refused.
+
+There's no fake mission, camera or SAM call. A simulated launch never reports done or
+ARRIVED, and the launcher can't consume it. `--demo` won't start with the motor or
+servo flags, and it's off unless asked for, so the tank's own page behaves as before.
+Idea from Codex.
+
+Checked: tests, the API on a running demo server, and the sticks, Launch drive and a
+negated command in headless Firefox.
+
 ## 2026-11-03 — Pi phone page has the current parser
 
 The Pi's `xiaor_text_action.py` now matches the repo (same SHA-256). Started the phone
