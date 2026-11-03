@@ -1,0 +1,235 @@
+{
+ "engine": "parser",
+ "model": null,
+ "note": "stdlib parser, any machine",
+ "date": "2026-11-02",
+ "passed": 18,
+ "total": 18,
+ "median_model_s": null,
+ "cases": [
+  {
+   "text": "go forward",
+   "group": "plain",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "back up",
+   "group": "plain",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "turn left",
+   "group": "plain",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "turn right",
+   "group": "plain",
+   "expect": [
+    "spinr"
+   ],
+   "got": [
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "drive forward for 2 seconds",
+   "group": "plain",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "reverse",
+   "group": "plain",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "turn around",
+   "group": "plain",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "turn left then go forward",
+   "group": "chain",
+   "expect": [
+    "spinl",
+    "go"
+   ],
+   "got": [
+    "spinl",
+    "go"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "go forward then turn right then back up",
+   "group": "chain",
+   "expect": [
+    "go",
+    "spinr",
+    "rev"
+   ],
+   "got": [
+    "go",
+    "spinr",
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "stop",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "emergency stop right now",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "please halt",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "don't go forward",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "do not turn left",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "what is your name",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "tell me a joke",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "scoot ahead a little bit",
+   "group": "off script",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  },
+  {
+   "text": "hang a left",
+   "group": "off script",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": ""
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+[
+  {"text": "go forward", "expect": ["go"], "group": "plain"},
+  {"text": "back up", "expect": ["rev"], "group": "plain"},
+  {"text": "turn left", "expect": ["spinl"], "group": "plain"},
+  {"text": "turn right", "expect": ["spinr"], "group": "plain"},
+  {"text": "drive forward for 2 seconds", "expect": ["go"], "group": "plain"},
+  {"text": "reverse", "expect": ["rev"], "group": "plain"},
+  {"text": "turn around", "expect": ["spinl"], "group": "plain"},
+  {"text": "turn left then go forward", "expect": ["spinl", "go"], "group": "chain"},
+  {"text": "go forward then turn right then back up", "expect": ["go", "spinr", "rev"], "group": "chain"},
+  {"text": "stop", "expect": ["stop"], "group": "stop"},
+  {"text": "emergency stop right now", "expect": ["stop"], "group": "stop"},
+  {"text": "please halt", "expect": ["stop"], "group": "stop"},
+  {"text": "don't go forward", "expect": [], "group": "no motion"},
+  {"text": "do not turn left", "expect": [], "group": "no motion"},
+  {"text": "what is your name", "expect": [], "group": "no motion"},
+  {"text": "tell me a joke", "expect": [], "group": "no motion"},
+  {"text": "scoot ahead a little bit", "expect": ["go"], "group": "off script"},
+  {"text": "hang a left", "expect": ["spinl"], "group": "off script"}
+]
