@@ -3,9 +3,9 @@
  "model": null,
  "cases_file": "heldout.json",
  "prompt": null,
- "note": "",
+ "note": "after the allowlist fix; not an unseen test, the fix was built after seeing this list's failures",
  "date": "2026-11-03",
- "passed": 36,
+ "passed": 38,
  "total": 50,
  "median_model_s": null,
  "cases": [
@@ -80,10 +80,8 @@
    "expect": [
     "rev"
    ],
-   "got": [
-    "rev"
-   ],
-   "pass": true,
+   "got": [],
+   "pass": false,
    "latency_s": null,
    "note": ""
   },
@@ -104,10 +102,8 @@
    "expect": [
     "spinl"
    ],
-   "got": [
-    "spinl"
-   ],
-   "pass": true,
+   "got": [],
+   "pass": false,
    "latency_s": null,
    "note": ""
   },
@@ -165,10 +161,8 @@
    "expect": [
     "rev"
    ],
-   "got": [
-    "rev"
-   ],
-   "pass": true,
+   "got": [],
+   "pass": false,
    "latency_s": null,
    "note": ""
   },
@@ -226,10 +220,8 @@
    "expect": [
     "rev"
    ],
-   "got": [
-    "rev"
-   ],
-   "pass": true,
+   "got": [],
+   "pass": false,
    "latency_s": null,
    "note": ""
   },
@@ -363,9 +355,7 @@
     "spinl",
     "rev"
    ],
-   "got": [
-    "spinl"
-   ],
+   "got": [],
    "pass": false,
    "latency_s": null,
    "note": ""
@@ -419,10 +409,8 @@
    "text": "avoid turning left",
    "group": "negation",
    "expect": [],
-   "got": [
-    "spinl"
-   ],
-   "pass": false,
+   "got": [],
+   "pass": true,
    "latency_s": null,
    "note": ""
   },
@@ -430,10 +418,8 @@
    "text": "you shouldn't drive forward",
    "group": "negation",
    "expect": [],
-   "got": [
-    "go"
-   ],
-   "pass": false,
+   "got": [],
+   "pass": true,
    "latency_s": null,
    "note": ""
   },
@@ -441,10 +427,8 @@
    "text": "don't turn left, turn right",
    "group": "negation",
    "expect": [],
-   "got": [
-    "spinr"
-   ],
-   "pass": false,
+   "got": [],
+   "pass": true,
    "latency_s": null,
    "note": ""
   },
@@ -524,10 +508,8 @@
    "text": "what does go forward mean",
    "group": "trap",
    "expect": [],
-   "got": [
-    "go"
-   ],
-   "pass": false,
+   "got": [],
+   "pass": true,
    "latency_s": null,
    "note": ""
   },
@@ -535,10 +517,8 @@
    "text": "left is my favourite direction",
    "group": "trap",
    "expect": [],
-   "got": [
-    "spinl"
-   ],
-   "pass": false,
+   "got": [],
+   "pass": true,
    "latency_s": null,
    "note": ""
   },
@@ -573,10 +553,8 @@
    "text": "you're right",
    "group": "trap",
    "expect": [],
-   "got": [
-    "spinr"
-   ],
-   "pass": false,
+   "got": [],
+   "pass": true,
    "latency_s": null,
    "note": ""
   }

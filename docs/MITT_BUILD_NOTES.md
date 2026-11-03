@@ -47,11 +47,11 @@ Octagon results were measured by hand on the floor, not from telemetry. They're 
 
 Llama was the starting point, and it isn't in the final drive path. Getting 11/18 at about 2 seconds a command was a fair baseline for a Pi, and the misses taught me something: "emergency stop right now" came back as stop *and* turn right. Stop can't be left to a model's judgement.
 
-So a fixed-phrase parser took over the front end, with stop always winning and the aim that anything unknown, negated or ambiguous moves nothing. It doesn't always manage that: a later test found phrasing that gets through it. Once the job became "go to that thing," the hard part was seeing, and that's SAM's.
+So a fixed-phrase parser took over the front end, with stop always winning and the aim that anything unknown, negated or ambiguous moves nothing. A later test found phrasing that got through it ("you're right" turned right), so it now moves only when the whole sentence is a command. Once the job became "go to that thing," the hard part was seeing, and that's SAM's.
 
 The baseline is still runnable as an optional raw mode (`tank_control.py --raw`), so the comparison can be repeated. Numbers are in [eval/README.md](../eval/README.md).
 
-Later I fine-tuned Llama 3.2 3B for that raw mode and [published it](https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank). On 50 new commands it scored 49/50, against 45/50 for stock on the same Pi and 36/50 for the parser. It mostly learned when not to move. It didn't get any faster, it isn't in the drive path, and stop still never reaches it.
+Later I fine-tuned Llama 3.2 3B for that raw mode and [published it](https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank). On 50 new commands it scored 49/50, against 45/50 for stock on the same Pi and 36/50 for the parser, which moved on commands it shouldn't have. That test is what exposed the parser bug. It mostly learned when not to move. It didn't get any faster, it isn't in the drive path, and stop still never reaches it.
 
 There are still plenty of Meta fingerprints on this:
 
@@ -133,7 +133,7 @@ The chain in the video spends most of its time searching. Tracked steps are the 
 
 - Motors run through a token-gated listener on the Pi. Every move is capped at 3 seconds and 40% power, and the listener shuts itself off after an hour.
 - A dropped connection, a bad line or an exit drives all the pins low.
-- Stop always wins. Unknown, negated or ambiguous language is meant to move nothing, with known exceptions: "dance then go to the mug" still goes to the mug, and negators or phrasing it doesn't recognize can still move it ("you shouldn't drive forward", "you're right", and for missions "you shouldn't go to the mug"). See [eval/README.md](../eval/README.md).
+- Stop always wins. Anything that moves has to be the whole sentence: a command plus harmless words. Unknown, negated or ambiguous language should move nothing, but that comes from a word list, so it isn't a guarantee. See [eval/README.md](../eval/README.md).
 - If the target can't be found, it stops. On any error, the runner sends a stop.
 - The token never goes to the phone, and no keys live in the repo.
 

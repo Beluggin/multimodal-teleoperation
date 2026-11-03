@@ -31,9 +31,11 @@ LABEL_MOVE = {"drive.forward": "go", "drive.backward": "rev", "drive.left": "spi
 
 def run_parser(text):
     moves = []
-    for part in filter(None, SPLIT.split(text)):
+    parts = list(filter(None, SPLIT.split(text)))
+    blocked = tx.motion_blocked(text, parts)
+    for part in parts:
         move = LABEL_MOVE.get(tx.classify(part).label)
-        if move:
+        if move and (move == "stop" or not blocked):
             moves.append(move)
     return moves, None, ""
 

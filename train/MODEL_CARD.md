@@ -54,7 +54,7 @@ Each command passes only if the moves come out in exactly the expected order, wi
 | Stock Llama 3.2 3B, Ollama Q4 | same Pi | 45/50 | 18/18 | 4.16 s on the 50, 3.86 s on the 18 |
 | **This model** | desktop, RTX 4060 | **49/50** | 18/18 | 0.39 s on the 50 |
 | Stock Llama 3.2 3B, Ollama Q4 | same desktop | 42/50 | not run | 0.40 s on the 50 |
-| Fixed-phrase parser (no model) | any | 36/50 | 18/18 | none |
+| Fixed-phrase parser (no model), at the time | any | 36/50 | 18/18 | none |
 
 The one miss, "do a 180", came back with a move that doesn't exist (`spin`). MITT's reply check rejects a plan like that, so the robot doesn't move.
 

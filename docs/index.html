@@ -71,6 +71,7 @@
       <tr><td class="num">Oct 31</td><td>Bottle → cat</td><td class="num">171 s</td><td>Both ARRIVED</td></tr>
       <tr><td class="num">Oct 31</td><td>Blue ball → bottle</td><td class="num">163 s</td><td>Both ARRIVED</td></tr>
       <tr><td class="num">Nov 1</td><td>Blue ball → bottle (the run in the video)</td><td class="num">157 s</td><td>Both ARRIVED</td></tr>
+      <tr><td class="num">Nov 3</td><td>Blue ball, after the parser fix</td><td class="num">209 s</td><td>Drove to the ball, then lost it and stopped itself. No ARRIVED</td></tr>
     </tbody>
   </table></div>
   <p class="muted" style="margin-top:8px">The log holds 14 chained attempts, and 6 ended with both targets ARRIVED while the code was changing underneath them. Of the last 7, 5 finished both targets. These are test runs in one room, not a controlled reliability trial.</p>
@@ -94,17 +95,18 @@
     <tbody>
       <tr><td>Fine-tuned Llama 3.2 3B</td><td>Raspberry Pi 5, 4 GB</td><td class="num">49/50</td><td class="num">0</td><td class="num">3.97 s median</td></tr>
       <tr><td>Stock Llama 3.2 3B</td><td>same Pi</td><td class="num">45/50</td><td class="num">5</td><td class="num">4.16 s median</td></tr>
-      <tr><td>Fixed-phrase parser</td><td>any machine</td><td class="num">36/50</td><td class="num">6</td><td>none</td></tr>
+      <tr><td>Fixed-phrase parser, before the fix</td><td>any machine</td><td class="num">36/50</td><td class="num">6</td><td>none</td></tr>
+      <tr><td>Fixed-phrase parser, after the fix</td><td>any machine</td><td class="num">38/50</td><td class="num">0</td><td>none</td></tr>
     </tbody>
   </table></div>
-  <p class="muted" style="margin-top:8px">This is a small test written by this project. The negation and trap groups use the same kinds of sentences as training, so they aren't fully unseen. The gain is accuracy, not speed. The model only runs in raw mode, and the main path still uses the parser. <a href="https://github.com/Beluggin/multimodal-teleoperation/tree/main/eval">Details</a>.</p>
+  <p class="muted" style="margin-top:8px">This is a small test written by this project. The negation and trap groups use the same kinds of sentences as training, so they aren't fully unseen. The gain is accuracy, not speed. The model only runs in raw mode, and the main path still uses the parser. This list exposed a real parser bug ("you're right" turned right), now fixed, so the parser's 38/50 isn't an unseen score. <a href="https://github.com/Beluggin/multimodal-teleoperation/tree/main/eval">Details</a>.</p>
 
   <h2>Known limits</h2>
   <ul>
     <li>Motion is open loop. Short spins undershoot, and timing drifts with battery charge.</li>
     <li>Arrival is judged from the image, and some paths can report ARRIVED too early.</li>
     <li>With two cats in the room, it hunts whichever one it sees first.</li>
-    <li>The parser can still move on wording it doesn't recognize, such as "you shouldn't drive forward", and "you shouldn't go to the mug" starts a mission.</li>
+    <li>The parser's safety comes from a word list, so new wording could still get through. The Pi's phone page still has the older, looser parser.</li>
     <li>The arm is manual only.</li>
   </ul>
 </main>

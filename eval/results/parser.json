@@ -1,8 +1,10 @@
 {
  "engine": "parser",
  "model": null,
- "note": "stdlib parser, any machine",
- "date": "2026-11-02",
+ "cases_file": "commands.json",
+ "prompt": null,
+ "note": "",
+ "date": "2026-11-03",
  "passed": 18,
  "total": 18,
  "median_model_s": null,

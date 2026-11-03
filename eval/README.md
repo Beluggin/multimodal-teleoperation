@@ -21,7 +21,7 @@ python3 eval/language_eval.py llama --model llama3.2:3b --note "where it ran" --
 
 How to read these:
 
-- **The parser's score is flattering.** This list was written with the parser's phrases known. On the 50 new commands below it scored 36/50 and moved on 7 of its 14 misses, so it does not always fail safe. Outside this list, "you shouldn't go to the mug" starts a mission. This shows it handles the listed commands. It doesn't show it understands English better than Llama.
+- **The parser's score is flattering.** This list was written with the parser's phrases known, so it shows the parser handles these commands, not that it understands speech. See the new list below for what happened when it met wording it hadn't seen. This shows it handles the listed commands. It doesn't show it understands English better than Llama.
 - **Stop isn't scored for the model.** Raw mode catches stop words before the model runs, so Llama saw 15 of the 18 commands.
 - **The Pi's 18/18 is flattering too.** Four test commands ("go forward", "turn left then go forward", "don't go forward", "what is your name") also appear word for word as examples in the system prompt, and it's one pass at temperature 0 on a short list. It shows the prompt works, not that the Pi model is reliable.
 - **A bigger model did worse.** On the desktop, Llama 3.1 8B answered "do not turn left" with back up, then turn right. A negated command made it move, which is why the main path doesn't leave language to a model.
@@ -38,7 +38,8 @@ How to read these:
 | Stock Llama 3.2 3B, full prompt | same Pi | 45/50 | 5 | 4.16 s |
 | Fine-tuned, short prompt | desktop | 49/50 | 0 | 0.39 s |
 | Stock Llama 3.2 3B, full prompt | desktop | 42/50 | 8 | 0.40 s |
-| Fixed-phrase parser | any machine | 36/50 | 6 | none |
+| Fixed-phrase parser, before the fix below | any machine | 36/50 | 6 | none |
+| Fixed-phrase parser, after the fix below | any machine | 38/50 | 0 | none |
 
 The fine-tune also passed the 18 commands above on both machines (4.19 s median on the Pi, against stock's 3.86 s).
 
@@ -47,7 +48,9 @@ The fine-tune also passed the 18 commands above on both machines (4.19 s median 
 - **The one miss failed safely.** "do a 180" came back with a move that doesn't exist, so the reply check rejected the plan.
 - **Stock scored 42 on one machine and 45 on the other,** with the same model and temperature 0. That's unexplained, so treat small gaps as noise.
 - **Some answers are judgment calls.** "don't turn left, turn right" counts as no motion, because the rule is that any negation means don't move. Stock's and the parser's right turn is arguably what the person meant.
-- **The parser's other miss that moved wrongly** was "before backing up, turn left", which turned but never backed up. That's why the table says 6 where the text above says 7.
+- **This list found a real safety bug in the parser.** It looked for known phrases anywhere in a sentence and refused only on a short list of negators, so "you're right" turned right and "you shouldn't go to the mug" started a mission. It now moves only if the whole sentence is a command plus harmless words, any `n't` word or "avoid" refuses, and one unreadable part stops every move in a typed line. Stop is exempt and still wins from anywhere.
+- **The parser's 38/50 isn't an unseen score.** The fix was built after seeing this list's failures. The earlier result is kept in `results/heldout_parser_before_fix.json`. New wording could still get through, and a bare "right now" still counts as "right".
+- **The phone page is behind.** The Pi's copy of the parser hasn't been updated yet, so the phone page can still start a mission from the old wording.
 - **The main drive path still uses the parser.** The fine-tune beat it on this list but has only run in raw mode, not in missions.
 
 ## Fine-tuned Llama on the tank
@@ -82,7 +85,7 @@ Six steps on the floor, using stock Llama 3.2 3B on the Pi at 30% power on Nov 2
 
 ## Missions on the tank
 
-Launch to the final stop the motors acknowledged. ARRIVED is what the software reported. Source: the timestamped launcher log.
+Launch to the final stop the motors acknowledged. ARRIVED is what the software reported. Source: the timestamped launcher log, except Nov 3, which is from the run's output and a person watching.
 
 | Date | Run | Time | Result |
 |---|---|---|---|
@@ -95,6 +98,7 @@ Launch to the final stop the motors acknowledged. ARRIVED is what the software r
 | Oct 31 | Bottle → cat | 171 s | Both ARRIVED |
 | Oct 31 | Blue ball → bottle | 163 s | Both ARRIVED |
 | Nov 1 | Blue ball → bottle (the run in the video) | 157 s | Both ARRIVED |
+| Nov 3 | Blue ball, after the parser fix | 209 s | Launched and drove to the ball, then lost it. Scans found nothing and it stopped itself. No ARRIVED |
 
 The log holds 14 chained attempts, and 6 ended with both targets ARRIVED while the code was changing underneath them. Of the last 7, 5 finished both targets.
 

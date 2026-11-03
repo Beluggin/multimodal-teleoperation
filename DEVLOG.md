@@ -2,6 +2,22 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-11-03 — Parser: a command has to be the whole sentence
+
+The new test list showed the parser acted on known phrases anywhere in a
+sentence. Now a moving command must be the whole sentence plus harmless words, a
+goto must start the sentence, any n't word or "avoid" refuses, and a typed line
+moves all or nothing. Stop is exempt. `dance then go to the mug` no longer goes,
+so the old test pinning that was changed on purpose.
+
+Verified: 240 tests; parser 18/18 and 38/50 with 0 wrong moves (was 36/50 and 6),
+not an unseen score. On the tank: `you shouldn't go to the mug` refused at the
+real entry point. `go to the blue ball` launched and, by eye, drove to the ball,
+then lost it, scanned, and stopped itself after 209 s with no ARRIVED. Cause not
+established; no vision or drive code changed. Early output of that run was lost.
+
+Not done: the Pi's phone page still has the old parser.
+
 ## 2026-11-03 — Fine-tuned Llama for raw mode
 
 Wrote `eval/heldout.json` (50 commands) first, then a generated training set

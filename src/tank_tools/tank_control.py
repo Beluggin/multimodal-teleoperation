@@ -93,10 +93,14 @@ class Tank:
 def parse(text, speed):
     """One typed line -> (queue items, messages). Each item: (move, secs, speed, label)."""
     items, msgs = [], []
-    for part in filter(None, _SPLIT.split(text.strip())):
+    parts = list(filter(None, _SPLIT.split(text.strip())))
+    blocked = tx.motion_blocked(text, parts)  # all or nothing for the whole line
+    for part in parts:
         a = tx.classify(part)
         if a.label in STOP_LABELS:
             items.append(("stop", 0, 0, a.label))
+        elif blocked and a.label in LABEL_MOVE:
+            msgs.append(f"x {part!r}: {blocked}")
         elif a.label in LABEL_MOVE:
             secs = a.duration or (TURN_SECS if a.label in ("drive.left", "drive.right") else DRIVE_SECS)
             if a.label == "drive.around":

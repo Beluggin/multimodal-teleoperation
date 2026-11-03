@@ -17,7 +17,8 @@ Pi deploy: copy this one file next to tank_server.py (same minimum set as
 tank_setup.md). --exec posts to $TANK_URL (default http://localhost:5000)
 with $TANK_TOKEN (no default; set it in the environment).
 
-Safety aim (not a guarantee, see eval/README.md): unknown, negated ("don't ..."), and
+Safety aim (not a guarantee, see eval/README.md): unknown, negated ("don't ..."),
+and anything more than a whole command, and
 ambiguous ("forward and wave") inputs should not move. E-stop ("stop now",
 "emergency stop") skips claim and always sends emergency_stop. Read-only
 queries (sensors/status) skip claim too. "Go to/get the <target>" inputs
@@ -284,8 +285,22 @@ PHRASES: List[Tuple[str, str]] = [
     ("report in", "status"), ("report", "status"), ("status", "status"),
 ]
 
-_NEGATOR = re.compile(r"\b(?:don't|dont|do\s+not|won't|wont|never|not|no)\b",
-                      re.I)
+# Any n't word counts, so "shouldn't" needn't be listed. Broad on purpose: a
+# false refusal only means saying it again.
+_NEGATOR = re.compile(
+    r"\b(?:\w+n't|dont|wont|cant|cannot|shouldnt|wouldnt|couldnt|mustnt"
+    r"|do\s+not|never|not|no|avoid|avoiding|refrain|without)\b", re.I)
+# A sentence moves the tank only if it is the command plus these words and
+# nothing else. Anything else in the sentence ("what does go forward mean",
+# "you're right") means it isn't an order, so it moves nothing.
+_POLITE = re.compile(r"\b(?:can|could|would|will)\s+you\b|\bi\s+(?:want|need)\s+you\s+to\b")
+_FILLER = frozenset("""
+    please now ok okay alright tank just first kindly so and
+    a little bit slightly slowly slow fast quickly
+    for about seconds second secs sec s
+    one two three four five six seven eight nine ten half
+""".split())
+_MOTION_VERBS = frozenset("go move drive head roll scoot pull hang make take".split())
 _DURATION = re.compile(r"(\d+(?:\.\d+)?)\s*(?:s\b|sec|secs|second|seconds)",
                        re.I)
 _SLOW = re.compile(r"\bslow(ly)?\b|\bslow\s+down\b", re.I)
@@ -295,6 +310,30 @@ _WORD = re.compile(r"[a-z0-9']+")
 
 def _normalize(text: str) -> str:
     return " ".join(_WORD.findall(text.lower()))
+
+
+def is_negated(text: str) -> bool:
+    """True if a whole line says not to do something. Callers that split a line
+    on commas check this first, so "don't turn left, turn right" can't move."""
+    return bool(_NEGATOR.search(_normalize(text or "")))
+
+
+def motion_blocked(text: str, parts: List[str]) -> Optional[str]:
+    """Why a line split into parts may not move, or None. All or nothing: a
+    negation anywhere, or one part that can't be read, stops every move in the
+    line. Stops in the line still go through; callers handle those first."""
+    if is_negated(text):
+        return "the line says not to do something"
+    for part in parts:
+        if classify(part).kind in ("unknown", "refused", "ambiguous"):
+            return f"couldn't read {part!r}"
+    return None
+
+
+def _only_filler(words: str, verbs: bool = False) -> bool:
+    """True if these words, left over around a command, are harmless."""
+    allowed = _FILLER | _MOTION_VERBS if verbs else _FILLER
+    return all(w in allowed or w.isdigit() for w in _POLITE.sub(" ", words).split())
 
 
 def _phrase_re(phrase: str) -> "re.Pattern":
@@ -346,7 +385,9 @@ _GOTO_PRONOUNS = {"it", "there", "here"}
 def _goto_rest(norm: str) -> Optional[str]:
     """Raw text after a goto verb, or None when no goto template matches."""
     m = _GOTO_REST.search(norm)
-    return m.group(1) if m else None
+    if not m or not _only_filler(norm[:m.start()]):
+        return None
+    return m.group(1)
 
 
 def _clean_target(rest: str) -> Tuple[Optional[str], str]:
@@ -459,6 +500,8 @@ def classify(text: str) -> Action:
         # Only stop/estop matched alongside: fall through, stop wins.
 
     if not distinct:
+        if _NEGATOR.search(norm):
+            return _no_motion("refused", "negated command — not executing")
         return _no_motion("unknown", f"no matching action for {text!r}")
     if len(distinct) > 1:
         # Negated commands never execute, even when stop is present.
@@ -486,6 +529,15 @@ def classify(text: str) -> Action:
                            f"negated command ({matched!r}) — not executing")
 
     spec = ACTIONS[aid]
+    # Anything that moves has to be the whole sentence. Stop stays exempt, so it
+    # wins from anywhere in a sentence, and lights and queries don't move.
+    if spec.kind in ("drive", "arm", "camera", "speed"):
+        left = "".join(c for i, c in enumerate(norm)
+                       if not any(s <= i < e for s, e in used))
+        if not _only_filler(left, verbs=True):
+            return _no_motion("unknown", f"found {matched!r} but the sentence "
+                                         f"isn't only a command — not executing")
+
     commands = [dict(c) for c in spec.commands]
     delays = list(spec.delays)
     duration = spec.duration

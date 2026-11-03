@@ -19,6 +19,9 @@ def classify(text):
     return x.classify(text)
 
 
+from xiaor_text_action import motion_blocked as tx_motion_blocked  # noqa: E402
+
+
 class ClassifyDrive(unittest.TestCase):
     def test_synonyms(self):
         for text in ("drive forward", "move forward", "go forward",
@@ -140,6 +143,39 @@ class ClassifyCameraLightsQuery(unittest.TestCase):
                                     for c in a.commands))
 
 
+class MotionNeedsAWholeCommand(unittest.TestCase):
+    def test_a_command_word_inside_a_sentence_moves_nothing(self):
+        for text in ("you're right", "you shouldn't go right", "i think you should go right",
+                     "you shouldn't drive forward", "what does go forward mean",
+                     "left is my favourite direction", "my back hurts", "avoid turning left",
+                     "turn the page right", "i left my keys", "what is reach"):
+            with self.subTest(text=text):
+                self.assertEqual(classify(text).commands, [])
+
+    def test_plain_commands_still_work(self):
+        for text, label in (("go forward", "drive.forward"), ("please turn left", "drive.left"),
+                            ("can you back up", "drive.backward"), ("right", "drive.right"),
+                            ("turn left now", "drive.left"), ("scoot ahead a little bit", "drive.forward"),
+                            ("hang a left", "drive.left"), ("drive forward for 2 seconds", "drive.forward"),
+                            ("move forward slowly", "drive.forward"), ("tank go back", "drive.backward")):
+            with self.subTest(text=text):
+                self.assertEqual(classify(text).label, label)
+
+    def test_stop_still_wins_from_anywhere(self):
+        for text in ("you know what, stop", "what if we stop", "the cat is there stop now",
+                     "go forward stop", "emergency stop right now"):
+            with self.subTest(text=text):
+                self.assertIn(classify(text).kind, ("stop", "estop"))
+
+    def test_a_line_moves_all_or_nothing(self):
+        def blocked(text):
+            return tx_motion_blocked(text, [p.strip() for p in text.split(",")])
+        self.assertIsNone(blocked("turn left, go forward"))
+        self.assertTrue(blocked("don't turn left, turn right"))
+        self.assertTrue(blocked("before backing up, turn left"))
+        self.assertTrue(blocked("turn left, banana"))
+
+
 class ClassifyGoto(unittest.TestCase):
     def test_goto_extraction(self):
         for text, target in (("go to the shoe", "shoe"),
@@ -212,12 +248,31 @@ class ClassifyGoto(unittest.TestCase):
         # targets ("dance then go to the mug" was chaining to "dance").
         self.assertEqual(classify("go to the ball then the mug").targets,
                          ["ball", "mug"])
-        # (The single-goto parser ignores words BEFORE the verb, as it
-        # always has: "dance then go to the mug" -> mug, never "dance".)
-        self.assertEqual(classify("dance then go to the mug").targets,
-                         ["mug"])
+        # Words before the verb used to be ignored, so this went to the mug.
+        # Now it moves nothing: a word it can't read blocks the sentence.
+        self.assertNotEqual(classify("dance then go to the mug").kind, "goto")
         self.assertNotEqual(classify("go to the mug then dance").kind,
                             "goto")
+
+    def test_a_mission_has_to_be_the_whole_sentence(self):
+        for text in ("what happens if you go to the mug", "he said go to the mug",
+                     "i will go to the mug", "should you go to the mug",
+                     "you should go to the mug"):
+            with self.subTest(text=text):
+                self.assertNotEqual(classify(text).kind, "goto")
+                self.assertEqual(classify(text).commands, [])
+        for text in ("go to the mug", "please go to the mug", "tank go to the mug",
+                     "can you go to the mug", "i want you to go to the mug",
+                     "go to the blue ball then go to the bottle"):
+            with self.subTest(text=text):
+                self.assertEqual(classify(text).kind, "goto")
+
+    def test_more_kinds_of_negation_refuse_a_mission(self):
+        for text in ("you shouldn't go to the mug", "you can't go to the mug",
+                     "wouldn't go to the mug", "you cannot go to the mug",
+                     "avoid going to the mug", "go to the mug then don't go to the cat"):
+            with self.subTest(text=text):
+                self.assertEqual(classify(text).kind, "refused")
 
     def test_single_goto_has_one_target(self):
         self.assertEqual(classify("go to the mug").targets, ["mug"])
