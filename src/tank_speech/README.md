@@ -26,7 +26,7 @@ caller feeds audio to a configured session.
   with an `llm_fn` injected, an unknown final may be rescued by
   `llm_fallback_route()` — the LLM proposes a sentence that must
   re-classify as `goto` (target only, never drive commands).
-- `__main__.py` — `python3 -m tank_speech --status | --route "…"`.
+- `__main__.py` — `cd src && python3 -m tank_speech --status | --route "…"`.
 
 ## Minimal-downtime design
 
@@ -68,7 +68,7 @@ No Whisper deployment or live audio test was performed during access setup.
    `BASETEN_STT_WS_URL`). `BASETEN_LLM_MODEL` defaults to the verified
    Muse Spark id. STT bills GPU time separately from Muse model credits —
    side path only; demo inference stays on Meta models.
-3. `python3 -m tank_speech --status` should report `enabled: true`.
+3. `cd src && python3 -m tank_speech --status` should report `enabled: true`.
 4. Restart the Pi phone server with that env (safe flags of your
    choice; speech needs neither `--enable-servo` nor `--enable-motors`).
    The page's Hold-to-talk button enables when status says wired.
@@ -80,13 +80,13 @@ No Whisper deployment or live audio test was performed during access setup.
 
 ## Phone hooks
 
-`tank_phone/server.py` exposes `GET /api/speech/status` (`wired` true
+`src/tank_phone/server.py` exposes `GET /api/speech/status` (`wired` true
 only with a live session), `POST /api/speech/transcript {"text"}`, and
 `POST /api/speech/audio` (raw WAV, bounded, classify-only preview).
 
 ## Tests
 
-`python3 -m unittest discover -s tank_speech -p 'test_*.py'` — offline:
+`python3 -m unittest discover -s tests/tank_speech -p 'test_*.py'` — offline:
 config redaction, URL builders, transcript shapes, parser-only routing,
 LLM-fallback gating, inbox priority, a measured non-blocking check
 (the caller loop ticks >10× while a fake transcriber is parked), the

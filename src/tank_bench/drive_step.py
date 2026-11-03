@@ -10,7 +10,7 @@ so a crashed caller can never leave it driving.
 import socket
 import sys
 
-tok = open("/tmp/claude-1000/bench_token").read().strip()
+tok = open("/tmp/mitt/bench_token").read().strip()
 cmd = " ".join(sys.argv[1:]) or "stop"
 c = socket.create_connection(("127.0.0.1", 5098), timeout=5)
 c.sendall(f"{tok} {cmd}\n".encode())

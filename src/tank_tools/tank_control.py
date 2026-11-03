@@ -41,8 +41,8 @@ os.environ.setdefault("ESCDELAY", "25")  # make Esc respond fast in curses
 TANK = os.environ.get("TANK_HOST", "tank.local")  # or <tailscale-ip> for Tailscale
 PORT = 5098
 PULSE = 0.6  # bridges the keyboard's initial repeat delay
-TOKEN = open(os.environ.get("BENCH_TOKEN_FILE", "/tmp/claude-1000/bench_token")).read().strip()
-LOG = open("/tmp/claude-1000/tank_live.log", "a")
+TOKEN = open(os.environ.get("BENCH_TOKEN_FILE", "/tmp/mitt/bench_token")).read().strip()
+LOG = open("/tmp/mitt/tank_live.log", "a")
 
 MAX_SPEED = 30
 TRIM = 17           # right-track boost so straights go straight (floor-tested 2026-10-24)

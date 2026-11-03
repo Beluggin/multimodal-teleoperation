@@ -2,8 +2,8 @@
 """usage: benchclient.py <ip> <n> <move> [secs] [duty]  -- sends n commands, logs latency"""
 import random, socket, statistics as st, sys, time
 ip, n, rest = sys.argv[1], int(sys.argv[2]), " ".join(sys.argv[3:])
-tok = open("/tmp/claude-1000/bench_token").read().strip()
-log = open("/tmp/claude-1000/tank_live.log", "a")
+tok = open("/tmp/mitt/bench_token").read().strip()
+log = open("/tmp/mitt/tank_live.log", "a")
 c = socket.create_connection((ip, 5098), timeout=5); c.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 f = c.makefile("r"); on_d, rtt = [], []
 for i in range(n):

@@ -62,14 +62,14 @@ sliders (live only behind `--enable-servo`). No motor path exists here.
 ## Run
 
 Desktop smoke (touches no hardware):
-`python3 tank_phone/server.py --port 8123` → `curl localhost:8123/api/status`
+`python3 src/tank_phone/server.py --port 8123` → `curl localhost:8123/api/status`
 (sliders render, disabled; servo writes return 403.)
 
 Pi live (Adam present, explicit authorization only):
 `TANK_PHONE_MJPEG_CMD=/tmp/qstream python3 server.py --bind 0.0.0.0 --enable-servo --enable-motors`
 Phone opens `http://tank.local:8123/` (LAN) or the Tailscale address.
 Motors also need the bench listener on :5098 with its token file at
-`/tmp/claude-1000/bench_token` (Pi-local; the server reads it, the phone
+`/tmp/mitt/bench_token` (Pi-local; the server reads it, the phone
 never sees it). Start the server without the `--enable-*` flags for a
 safe review: every control renders, nothing can move.
 
@@ -84,7 +84,7 @@ safe review: every control renders, nothing can move.
 
 ## Tests
 
-`python3 -m unittest discover -s tank_phone -p 'test_*.py'` (FakeBus; no
+`python3 -m unittest discover -s tests/tank_phone -p 'test_*.py'` (FakeBus; no
 hardware). Parser suite in `tank_tools` is unchanged.
 
 ## Roadmap

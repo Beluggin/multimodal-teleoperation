@@ -15,8 +15,8 @@ Built and run live on 2026-10-24.
 | `octagon.sh` | desktop | The octagon demo route: `octagon.sh [first_turn] [corner] [final_spinl]`. Defaults are v2 (run-down battery); charged battery uses `0.80 0.35 0.46`. |
 | ~~`tankdrive.py`~~ | | Moved to `../tank_tools/tank_control.py` (keyboard + typed queue). |
 
-The desktop tools read the token from `/tmp/claude-1000/bench_token` and append to
-`/tmp/claude-1000/tank_live.log`. Start the listener on the tank with the same token:
+The desktop tools read the token from `/tmp/mitt/bench_token` and append to
+`/tmp/mitt/tank_live.log`. Start the listener on the tank with the same token:
 `BENCH_TOKEN=<token> nohup python3 -u /home/pi/motor_listen.py > ~/motor_listen.log 2>&1 &`
 
 ## Measured

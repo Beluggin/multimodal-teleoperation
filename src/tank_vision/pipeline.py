@@ -125,7 +125,7 @@ class VisionPipeline:
         except ImportError as e:
             raise RuntimeError(
                 "ultralytics is not installed in this environment. "
-                "Desktop: .venv/bin/pip install ultralytics  (see tank_vision/README.md)"
+                "Desktop: .venv/bin/pip install ultralytics  (see src/tank_vision/README.md)"
             ) from e
         os.makedirs(WEIGHTS_DIR, exist_ok=True)
         if self._detector is None:

@@ -25,7 +25,7 @@ Models: one dependency, Ultralytics — `yolo11n.pt` (detector) +
 `mobile_sam.pt` (segmenter, Meta SAM distilled). Smallest pair expected to
 run live on the Pi's CPU. If mask quality on `mc.jpg` disappoints, the step
 up is SAM2-tiny (`sam2_t.pt`) behind the same adapters. Weights download
-on first use into `tank_vision/weights/` (override with `TANK_VISION_HOME`).
+on first use into `src/tank_vision/weights/` (override with `TANK_VISION_HOME`).
 
 Note: pretrained YOLO knows COCO everyday objects. On `mc.jpg` (a circuit
 board close-up) expect `objects: []` from the auto path — a correct empty
@@ -53,13 +53,13 @@ everyday objects (chair, cup, person…) — that is where YOLO boxes appear.
 ## Tests (no torch needed)
 
 ```bash
-python3 -m unittest discover -s tank_vision -p 'test_*.py'   # 8 plumbing tests
-python3 -m unittest discover -s tank_tools -p 'test_*.py'    # parser, unchanged
+python3 -m unittest discover -s tests/tank_vision -p 'test_*.py'   # 8 plumbing tests
+python3 -m unittest discover -s tests/tank_tools -p 'test_*.py'    # parser, unchanged
 ```
 
 ## SAM 3.1 (flagship path, Meta Model API)
 
-`tank_vision/meta_sam.py` calls SAM 3.1 where the hackathon serves it:
+`src/tank_vision/meta_sam.py` calls SAM 3.1 where the hackathon serves it:
 the Meta Model API (`api.meta.ai`, model `sam-3.1`, text prompt + image,
 boxes + masks out, metered against the hackathon Model API credits).
 No HF gate, no GPU. Key from `MODEL_API_KEY` env only — never commit it.
@@ -81,7 +81,7 @@ uv venv --python 3.11 ~/tank_vision_env
 uv pip install --python ~/tank_vision_env/bin/python ultralytics
 uv pip uninstall --python ~/tank_vision_env/bin/python opencv-python
 uv pip install --python ~/tank_vision_env/bin/python opencv-python-headless
-# copy tank_vision/ (incl. weights/) to ~/tank_vision, run the same CLI
+# copy src/tank_vision/ (incl. weights/) to ~/tank_vision, run the same CLI
 ```
 
 The opencv swap is required: stock `opencv-python` needs `libGL.so.1`,

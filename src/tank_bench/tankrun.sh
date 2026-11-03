@@ -1,6 +1,6 @@
 #!/bin/bash
 # usage: tankrun.sh <move> [secs] [duty]  -- logs staged latency to tank_live.log
-LOG=/tmp/claude-1000/tank_live.log; SOCK=/tmp/claude-1000/cm-tank
+LOG=/tmp/mitt/tank_live.log; SOCK=/tmp/mitt/cm-tank
 K="-i $HOME/.ssh/tank -o BatchMode=yes"
 [ -S $SOCK ] || ssh $K -o ControlMaster=yes -o ControlPath=$SOCK -o ControlPersist=600 -fN pi@tank.local
 send=$(date +%s%3N)

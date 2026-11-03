@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """usage: route.py "move secs duty pause [right_trim]" ...  -- runs moves over ONE connection (disconnect = stop)"""
 import socket, sys, time
-tok = open("/tmp/claude-1000/bench_token").read().strip()
-log = open("/tmp/claude-1000/tank_live.log", "a")
+tok = open("/tmp/mitt/bench_token").read().strip()
+log = open("/tmp/mitt/tank_live.log", "a")
 c = socket.create_connection(("tank.local", 5098), timeout=5); c.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 f = c.makefile("r")
 for step in sys.argv[1:]:

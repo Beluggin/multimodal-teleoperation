@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tank_phone/server.py — Pi-hosted phone GUI for the tank.
+"""src/tank_phone/server.py — Pi-hosted phone GUI for the tank.
 
 Stdlib only. Serves index.html plus a JSON API. Tap/text endpoints are
 dry-run previews. Servo writes are LIVE only with --enable-servo and
@@ -10,12 +10,12 @@ the tank. Servo writes speak the proven 0x17 frame via servo_ctl.py
 read from a Pi-local file, never sent to the phone).
 
 Desktop smoke (no hardware touched):
-    python3 tank_phone/server.py --port 8123
+    python3 src/tank_phone/server.py --port 8123
     curl localhost:8123/api/status
 
 Pi deploy:
-    scp tank_phone/server.py tank_phone/index.html tank_phone/servo_ctl.py \\
-        tank_tools/xiaor_text_action.py tank-lan:~/tank_phone/
+    scp src/tank_phone/server.py src/tank_phone/index.html src/tank_phone/servo_ctl.py \\
+        src/tank_tools/xiaor_text_action.py tank-lan:~/tank_phone/
     ssh tank-lan 'cd ~/tank_phone && TANK_PHONE_MJPEG_CMD=/tmp/qstream \\
         python3 server.py --bind 0.0.0.0 --enable-servo'
 Phone on the same WiFi: http://tank.local:8123/
@@ -37,7 +37,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# The desktop drive loop (tank_vision/centre_run.grab) writes each look
+# The desktop drive loop (src/tank_vision/centre_run.grab) writes each look
 # here with qstream while it owns the camera.
 DRIVE_FRAME = "/tmp/centre_frame.jpg"
 for _p in (HERE, os.path.dirname(HERE),
@@ -170,7 +170,7 @@ def stick_to_move(x, y, cap):
 
     Pure function. Garbage in -> stop. Pure side push spins; otherwise
     forward/reverse with steering trim (right track faster = turn left,
-    so turning right needs negative trim — see tank_bench/README.md).
+    so turning right needs negative trim — see src/tank_bench/README.md).
     """
     try:
         x, y, cap = float(x), float(y), float(cap)
@@ -640,7 +640,7 @@ class Handler(BaseHTTPRequestHandler):
                         "note": "speech preview only: not sent (dry run)"})
         elif path == "/api/launch":
             # Page -> desktop launcher queue. Goto only: the desktop
-            # launcher (tank_vision/launcher.py) consumes one pending
+            # launcher (src/tank_vision/launcher.py) consumes one pending
             # launch and drives under its own authorisation; this Pi
             # endpoint itself moves nothing.
             data = self._read_json() or {}
@@ -879,7 +879,7 @@ def main(argv=None):
     ap.add_argument("--bench-host", default="127.0.0.1")
     ap.add_argument("--bench-port", type=int, default=5098)
     ap.add_argument("--bench-token-file",
-                    default="/tmp/claude-1000/bench_token",
+                    default="/tmp/mitt/bench_token",
                     help="Pi-local bench token file (never sent to phone)")
     ap.add_argument("--tls-cert", default="",
                     help="PEM cert for HTTPS (phone mic needs a secure "

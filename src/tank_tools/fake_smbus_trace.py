@@ -7,7 +7,7 @@ fake. No tank contact, no hardware writes.
 
 Pi usage (tank on the bench, no approval needed — nothing touches /dev/i2c)::
 
-    python3 tank_tools/fake_smbus_trace.py --dir xiaor --out /tmp/servo_trace.jsonl
+    python3 src/tank_tools/fake_smbus_trace.py --dir xiaor --out /tmp/servo_trace.jsonl
 
 ``--dir`` must hold the license trio (``.so`` + ``_XiaoRGEEK_about_.py`` +
 ``XiaoRGEEK.jpg``). ``SaveServo``/``ReSetServo`` are traced through the fake
@@ -15,7 +15,7 @@ too, so nothing persists anywhere.
 
 Desktop (x86) usage — harness self-check only, never the real ``.so``::
 
-    python3 tank_tools/fake_smbus_trace.py --self-test
+    python3 src/tank_tools/fake_smbus_trace.py --self-test
 
 Stdlib only.
 """
