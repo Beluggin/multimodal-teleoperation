@@ -26,6 +26,17 @@ make eval    # scores the language parser
 python3 src/tank_phone/server.py --port 8123    # the phone page at localhost:8123, motors and servos off
 ```
 
+Or with Docker, which runs the same things:
+
+```
+docker build -t mitt .
+docker run --rm mitt make test
+docker run --rm mitt make eval
+docker run --rm -p 127.0.0.1:8123:8123 mitt    # the phone page at localhost:8123
+```
+
+The container can't reach a robot, so it's for trying the software. Motors, servos and the camera need the Pi, using the steps below.
+
 With a XiaoR tank, run these only with someone watching it:
 
 1. `cp .env.example .env` and fill it in. `MODEL_API_KEY` is your Meta Model API key.

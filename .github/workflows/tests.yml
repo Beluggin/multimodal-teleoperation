@@ -13,3 +13,18 @@ jobs:
       - run: pip install -r requirements.txt
       - run: make test
       - run: make eval
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t mitt .
+      - run: docker run --rm mitt make test
+      - run: docker run --rm mitt make eval
+      - name: Phone page answers
+        run: |
+          docker run -d --name mitt-page -p 127.0.0.1:8123:8123 mitt
+          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 \
+            -o /dev/null http://127.0.0.1:8123/
+          docker logs mitt-page
+          docker logs mitt-page 2>&1 | grep "motors disabled"
+          docker rm -f mitt-page
