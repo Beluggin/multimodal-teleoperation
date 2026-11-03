@@ -101,7 +101,7 @@ More measurements are in [eval/README.md](eval/README.md). The log holds 14 chai
 - Motors run through a token-gated listener on the Pi. Every move is capped at 3 s and 40% power, and the listener exits after an hour.
 - A dropped connection, a bad line or an exit drives all pins low.
 - Each drive is capped in steps. On any error the runner sends a stop.
-- Stop wins. Anything that moves has to be the whole sentence: a command plus harmless words. Unknown, negated or ambiguous language should move nothing, but that comes from a word list, so it isn't a guarantee ([evaluation](eval/README.md)). The Pi's phone page still has the older parser, which is looser.
+- Stop wins. Anything that moves has to be the whole sentence: a command plus harmless words. Unknown, negated or ambiguous language should move nothing, but that comes from a word list, so it isn't a guarantee ([evaluation](eval/README.md)).
 - No keys or tokens in this repo. They come from the environment only.
 
 ## Layout

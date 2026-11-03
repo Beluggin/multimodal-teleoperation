@@ -50,7 +50,7 @@ The fine-tune also passed the 18 commands above on both machines (4.19 s median 
 - **Some answers are judgment calls.** "don't turn left, turn right" counts as no motion, because the rule is that any negation means don't move. Stock's and the parser's right turn is arguably what the person meant.
 - **This list found a real safety bug in the parser.** It looked for known phrases anywhere in a sentence and refused only on a short list of negators, so "you're right" turned right and "you shouldn't go to the mug" started a mission. It now moves only if the whole sentence is a command plus harmless words, any `n't` word or "avoid" refuses, and one unreadable part stops every move in a typed line. Stop is exempt and still wins from anywhere.
 - **The parser's 38/50 isn't an unseen score.** The fix was built after seeing this list's failures. The earlier result is kept in `results/heldout_parser_before_fix.json`. New wording could still get through, and a bare "right now" still counts as "right".
-- **The phone page is behind.** The Pi's copy of the parser hasn't been updated yet, so the phone page can still start a mission from the old wording.
+- **The phone page has the fix too.** The Pi's copy of the parser was updated on Nov 3 and checked by hand with five typed commands, with motors and servos off.
 - **The main drive path still uses the parser.** The fine-tune beat it on this list but has only run in raw mode, not in missions.
 
 ## Fine-tuned Muse Glimmer 30B on the same lists

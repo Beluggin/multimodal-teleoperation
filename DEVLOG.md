@@ -2,6 +2,14 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-11-03 — Pi phone page has the current parser
+
+The Pi's `xiaor_text_action.py` now matches the repo (same SHA-256). Started the phone
+server on the Pi with motors and servos off, and Adam typed five commands on his phone:
+a goto, a goto chain, a negated goto, stop, and a goto mixed with another command. All
+five came back as expected: goto, chain, refused, stop, ambiguous. No mission launched
+and the tank didn't move, so this checks the parser on the page, not a drive.
+
 ## 2026-11-03 — Fine-tuned Muse Glimmer 30B on Modal
 
 The hackathon board gave no tuning points for the Llama LoRA, so the same data and
