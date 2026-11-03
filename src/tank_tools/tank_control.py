@@ -19,7 +19,12 @@ Talks to the bench listener (tank_bench/motor_listen.py) on the tank. Motors onl
 Typed instructions go through xiaor_text_action.classify(), so its safety
 posture holds: negated, unknown and ambiguous text never moves.
 Pressing any drive key also clears the queue (manual always wins).
+
+RAW mode (--raw)
+    typed instructions go to Llama on Ollama instead of the parser (llama_raw.py).
+    Stop still skips the model, and a stop or manual key drops a pending answer.
 """
+import argparse
 import collections
 import curses
 import os
@@ -28,6 +33,7 @@ import socket
 import threading
 import time
 
+import llama_raw
 import xiaor_text_action as tx
 
 os.environ.setdefault("ESCDELAY", "25")  # make Esc respond fast in curses
@@ -108,7 +114,7 @@ def parse(text, speed):
     return items, msgs
 
 
-def main(scr):
+def main(scr, raw=False):
     curses.curs_set(0)
     scr.nodelay(True)
     tank = Tank()
@@ -119,7 +125,17 @@ def main(scr):
 
     qlock = threading.Lock()  # a stop and a queued send can't interleave
 
+    def deliver_plan(text, plan, spd):
+        items, msgs = llama_raw.plan_to_queue(text, plan, spd)
+        with qlock:
+            queue.extend(items)
+        state["msgs"].extend(msgs)
+
+    runner = llama_raw.RawRunner(deliver_plan) if raw else None
+
     def clear_queue():
+        if runner:
+            runner.cancel()  # first: any late plan lands before the clear below
         with qlock:
             queue.clear()
             cancel.set()
@@ -166,7 +182,13 @@ def main(scr):
                     if not line.strip():
                         mode = "DRIVE"
                     else:
-                        items, msgs = parse(line, speed)
+                        if not raw:
+                            items, msgs = parse(line, speed)
+                        elif llama_raw.is_stop(line):
+                            items, msgs = [("stop", 0, 0, "stop")], []
+                        else:
+                            runner.submit(line, speed)
+                            items, msgs = [], [f"? {line!r}: asking Llama"]
                         if any(m == "stop" for m, *_ in items):
                             clear_queue()  # stop jumps the queue
                             tank.send("stop", tag="queue")
@@ -182,7 +204,7 @@ def main(scr):
 
             h, w = scr.getmaxyx()
             rows = [
-                f"{mode}  speed {speed}%  last {tank.last}  rtt {tank.rtt:.0f}ms",
+                f"{'RAW LLAMA  ' if raw else ''}{mode}  speed {speed}%  last {tank.last}  rtt {tank.rtt:.0f}ms",
                 f"now: {state['now'] or '-'}",
                 f"queue ({len(queue)}): " + ", ".join(f"{lbl.split('.')[-1]} {s:g}s" for _, s, _, lbl in list(queue)[:6]),
                 "",
@@ -209,4 +231,7 @@ def main(scr):
 
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    ap = argparse.ArgumentParser(description="Drive the tank by keyboard or typed instructions.")
+    ap.add_argument("--raw", action="store_true",
+                    help="typed instructions go to Llama on Ollama, not the fixed-phrase parser")
+    curses.wrapper(main, raw=ap.parse_args().raw)
