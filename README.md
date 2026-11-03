@@ -74,6 +74,7 @@ To use the fine-tuned model, get the GGUF and Modelfile from [Hugging Face](http
 - **Muse Spark Open** (`muse-spark-open-1026`), served through Baseten, is wired in as the fallback when the parser doesn't know a phrase. It can only propose a sentence, and that sentence must still pass the parser (`src/tank_speech/`).
 - **Llama 3.2** on the Pi was the starting point. It is not in the main drive path, and the build notes explain why. It's still runnable as an optional raw mode, words to moves with no parser, so the baseline can be compared with the full pipeline (`src/tank_tools/llama_raw.py`, [results](eval/README.md)).
 - **[Llama-3.2-3B-MITT-Tank](https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank)** is a LoRA fine-tune of Llama 3.2 3B for raw mode, published on Hugging Face. It scored 49/50 on new commands against stock's 45/50 on the same Pi, and mainly learned when not to move ([results](eval/README.md), [training](train/README.md)).
+- **[Muse-Glimmer-30B-MITT-Tank](https://huggingface.co/Beluggin/Muse-Glimmer-30B-MITT-Tank)** is a LoRA fine-tune of Muse Glimmer 30B on the same data, trained on a rented GPU. It scored 50/50 and 18/18 there, but stock Glimmer's lower score has a big caveat ([results](eval/README.md)). It has never run on the tank, because it's far too big for the Pi, so the tank keeps the Llama tune.
 
 The stock XiaoR stack is fully replaced: the repo's own motor listener and bench-measured motor map (`src/tank_bench/`), the recovered servo protocol, and a small C MJPEG grabber (`src/tank_phone/qstream.c`).
 

@@ -18,4 +18,17 @@ Download the weights file by file if `hf download --include` skips them, because
 
 The training set leaves out every whole command in `eval/commands.json` and `eval/heldout.json`, and the build fails if one gets in. If you retrain because of a miss on `heldout.json`, write a new test list, since that one has then shaped the model.
 
+## Muse Glimmer 30B on a rented GPU
+
+[Muse-Glimmer-30B-MITT-Tank](https://huggingface.co/Beluggin/Muse-Glimmer-30B-MITT-Tank) uses the same data and LoRA settings. `GLIMMER_MODEL_CARD.md` is its card. `glimmer_lora.py` does the training and testing, and `modal_glimmer.py` runs them on [Modal](https://modal.com):
+
+```
+modal run --detach train/modal_glimmer.py::download
+modal run --detach train/modal_glimmer.py::trial
+modal run --detach train/modal_glimmer.py::train
+modal run --detach train/modal_glimmer.py::test
+```
+
+It peaked at 66.8 GB of GPU memory at full precision, and training took 19 minutes on an A100 80 GB. Modal asks for a payment method on the account before it will start that GPU, even with credits. Every stage has a time limit and no retries, but Modal can still interrupt a job and restart it, as it did once during the download.
+
 Llama 3.2 is licensed under the Llama 3.2 Community License, Copyright © Meta Platforms, Inc. All Rights Reserved.

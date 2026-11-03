@@ -1,0 +1,255 @@
+{
+ "engine": "transformers",
+ "model": "glimmer_tuned",
+ "cases_file": "commands.json",
+ "note": "A100 80 GB on Modal. Run through transformers at full precision, greedy, reply started at the answer channel, with no JSON constraint. Ollama's JSON mode was on for the Llama results, so these aren't strictly like for like.",
+ "date": "2026-11-03",
+ "passed": 18,
+ "total": 18,
+ "invalid_replies": 0,
+ "median_model_s": 1.6031480319999787,
+ "cases": [
+  {
+   "text": "go forward",
+   "group": "plain",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 1.4892838979999965,
+   "note": "go 1s",
+   "reply": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}]}"
+  },
+  {
+   "text": "back up",
+   "group": "plain",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 1.5828184240000098,
+   "note": "rev 1s",
+   "reply": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}"
+  },
+  {
+   "text": "turn left",
+   "group": "plain",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 1.713014085999987,
+   "note": "spinl 0.65s",
+   "reply": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}]}"
+  },
+  {
+   "text": "turn right",
+   "group": "plain",
+   "expect": [
+    "spinr"
+   ],
+   "got": [
+    "spinr"
+   ],
+   "pass": true,
+   "latency_s": 1.6904348010000092,
+   "note": "spinr 0.65s",
+   "reply": "{\"moves\": [{\"move\": \"spinr\", \"secs\": 0.65}]}"
+  },
+  {
+   "text": "drive forward for 2 seconds",
+   "group": "plain",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 1.614483287000013,
+   "note": "go 2s",
+   "reply": "{\"moves\": [{\"move\": \"go\", \"secs\": 2.0}]}"
+  },
+  {
+   "text": "reverse",
+   "group": "plain",
+   "expect": [
+    "rev"
+   ],
+   "got": [
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 1.5949466920000077,
+   "note": "rev 1s",
+   "reply": "{\"moves\": [{\"move\": \"rev\", \"secs\": 1.0}]}"
+  },
+  {
+   "text": "turn around",
+   "group": "plain",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 1.7002538829999878,
+   "note": "spinl 1.25s",
+   "reply": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 1.25}]}"
+  },
+  {
+   "text": "turn left then go forward",
+   "group": "chain",
+   "expect": [
+    "spinl",
+    "go"
+   ],
+   "got": [
+    "spinl",
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 2.916496142999989,
+   "note": "spinl 0.65s, go 1s",
+   "reply": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}, {\"move\": \"go\", \"secs\": 1.0}]}"
+  },
+  {
+   "text": "go forward then turn right then back up",
+   "group": "chain",
+   "expect": [
+    "go",
+    "spinr",
+    "rev"
+   ],
+   "got": [
+    "go",
+    "spinr",
+    "rev"
+   ],
+   "pass": true,
+   "latency_s": 4.146650829999999,
+   "note": "go 1s, spinr 0.65s, rev 1s",
+   "reply": "{\"moves\": [{\"move\": \"go\", \"secs\": 1.0}, {\"move\": \"spinr\", \"secs\": 0.65}, {\"move\": \"rev\", \"secs\": 1.0}]}"
+  },
+  {
+   "text": "stop",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": "",
+   "reply": ""
+  },
+  {
+   "text": "emergency stop right now",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": "",
+   "reply": ""
+  },
+  {
+   "text": "please halt",
+   "group": "stop",
+   "expect": [
+    "stop"
+   ],
+   "got": [
+    "stop"
+   ],
+   "pass": true,
+   "latency_s": null,
+   "note": "",
+   "reply": ""
+  },
+  {
+   "text": "don't go forward",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.521453643000001,
+   "note": "Llama chose no motion",
+   "reply": "{\"moves\": []}"
+  },
+  {
+   "text": "do not turn left",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.5322040460000039,
+   "note": "Llama chose no motion",
+   "reply": "{\"moves\": []}"
+  },
+  {
+   "text": "what is your name",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.5347133340000028,
+   "note": "Llama chose no motion",
+   "reply": "{\"moves\": []}"
+  },
+  {
+   "text": "tell me a joke",
+   "group": "no motion",
+   "expect": [],
+   "got": [],
+   "pass": true,
+   "latency_s": 0.5339387260000024,
+   "note": "Llama chose no motion",
+   "reply": "{\"moves\": []}"
+  },
+  {
+   "text": "scoot ahead a little bit",
+   "group": "off script",
+   "expect": [
+    "go"
+   ],
+   "got": [
+    "go"
+   ],
+   "pass": true,
+   "latency_s": 1.6031480319999787,
+   "note": "go 0.5s",
+   "reply": "{\"moves\": [{\"move\": \"go\", \"secs\": 0.5}]}"
+  },
+  {
+   "text": "hang a left",
+   "group": "off script",
+   "expect": [
+    "spinl"
+   ],
+   "got": [
+    "spinl"
+   ],
+   "pass": true,
+   "latency_s": 1.702879222000007,
+   "note": "spinl 0.65s",
+   "reply": "{\"moves\": [{\"move\": \"spinl\", \"secs\": 0.65}]}"
+  }
+ ]
+}
