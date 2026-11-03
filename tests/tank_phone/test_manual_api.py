@@ -3,6 +3,8 @@
 Run: python3 -m unittest discover -s tank_phone -p 'test_*.py'
 """
 
+import contextlib
+import io
 import json
 import os
 import sys
@@ -243,8 +245,19 @@ class DemoMode(unittest.TestCase):
 
     def test_demo_cannot_combine_with_live_flags(self):
         for flag in ("--enable-motors", "--enable-servo"):
-            with self.assertRaises(SystemExit):
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), self.assertRaises(SystemExit):
                 srv.main(["--demo", flag])
+            self.assertIn("--demo can't be combined", err.getvalue())
+
+    def test_no_robot_tip_only_when_nothing_is_live(self):
+        def hint(**flags):
+            args = dict(demo=False, enable_motors=False, enable_servo=False)
+            return srv.startup_hint(type("Args", (), {**args, **flags}))
+        self.assertIn("--demo", hint())
+        self.assertEqual(hint(demo=True), "")
+        self.assertEqual(hint(enable_motors=True), "")
+        self.assertEqual(hint(enable_servo=True), "")
 
 
 class WithoutDemo(unittest.TestCase):
