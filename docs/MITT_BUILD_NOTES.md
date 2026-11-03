@@ -53,7 +53,7 @@ The baseline is still runnable as an optional raw mode (`tank_control.py --raw`)
 
 Later I fine-tuned Llama 3.2 3B for that raw mode and [published it](https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank). On 50 new commands it scored 49/50, against 45/50 for stock on the same Pi and 36/50 for the parser, which moved on commands it shouldn't have. That test is what exposed the parser bug. It mostly learned when not to move. It didn't get any faster, it isn't in the drive path, and stop still never reaches it.
 
-I then ran the same training data through [Muse Glimmer 30B](https://huggingface.co/Beluggin/Muse-Glimmer-30B-MITT-Tank) on a rented GPU, for about $1.50 by my math. It went 50/50, but it's far too big for the Pi and has never driven the tank. The Llama tune is still the one on the robot.
+I then ran the same training data through [Muse Glimmer 30B](https://huggingface.co/Beluggin/Muse-Glimmer-30B-MITT-Tank) on a rented GPU, for $1.30 on the Modal bill. It went 50/50, but it's far too big for the Pi and has never driven the tank. The Llama tune is still the one on the robot.
 
 There are still plenty of Meta fingerprints on this:
 
