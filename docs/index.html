@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MITT Run Report</title>
+<meta name="description" content="Measured results from MITT, a real tank that takes spoken instructions and finds its targets with Meta SAM 3.1.">
+<style>
+  :root {
+    --bg: #f6f5f1; --surface: #ffffff; --text: #1d1f1c; --muted: #5d625a;
+    --line: #dcdbd3; --accent: #2f6b3f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151714; --surface: #1e211c; --text: #ecece6; --muted: #a4a99f;
+      --line: #343830; --accent: #86c797;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 17px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 2.4rem; line-height: 1.1; margin: 0 0 8px; }
+  h2 { font-size: 1.3rem; margin: 44px 0 10px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); }
+  .lede { font-size: 1.15rem; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  .notice {
+    border-left: 3px solid var(--accent); background: var(--surface);
+    padding: 10px 14px; margin: 18px 0 24px; font-size: .95rem;
+  }
+  .video {
+    aspect-ratio: 16 / 9; width: 100%; border: 0; display: block;
+    border-radius: 6px; background: #000;
+  }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .94rem; background: var(--surface); }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; }
+  td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  ul { padding-left: 20px; margin: 0 0 14px; }
+  li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>MITT</h1>
+  <p class="lede">Multimodal Interface for Teleoperation and Tracking. Say what you want, and a real tank goes and gets it.</p>
+  <p class="notice">This is a report of recorded runs, not a live tank. The robot needs its hardware, so nothing here drives anything.</p>
+
+  <iframe class="video" src="https://www.youtube-nocookie.com/embed/jEXv6ofJLUQ" title="MITT demo video" allowfullscreen></iframe>
+  <p class="muted" style="margin-top:8px"><a href="https://youtu.be/jEXv6ofJLUQ">Watch on YouTube</a> · <a href="https://github.com/Beluggin/multimodal-teleoperation">Code</a> · <a href="https://github.com/Beluggin/multimodal-teleoperation/blob/main/docs/MITT_BUILD_NOTES.md">Build notes</a></p>
+
+  <h2>How a mission runs</h2>
+  <p>Words become a target. The camera frame and the target go to <strong>Meta SAM 3.1</strong>. The tank turns toward what SAM finds, drives, checks that it has arrived, and moves on to the next target. If it loses the target, it backs up and looks, sweeps the neck, then turns the chassis. If nothing turns up, it stops.</p>
+
+  <h2>Missions on the tank</h2>
+  <p>Launch to the final stop the motors acknowledged. ARRIVED is what the software reported.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Date</th><th>Run</th><th>Time</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td class="num">Oct 30</td><td>"go to the cat", before the IPv4 fix</td><td class="num">10 m 52 s</td><td>ARRIVED, through two-minute stalls</td></tr>
+      <tr><td class="num">Oct 30</td><td>"go to the foot", after the fix</td><td class="num">67 s</td><td>Ran out of steps, no stalls</td></tr>
+      <tr><td class="num">Oct 30</td><td>"go to the blue ball"</td><td class="num">71 s</td><td>ARRIVED, stopped short of the ball</td></tr>
+      <tr><td class="num">Oct 31</td><td>Blue ball → mug</td><td class="num">67 s</td><td>Both ARRIVED, but the mug was short</td></tr>
+      <tr><td class="num">Oct 31</td><td>Blue ball → mug</td><td class="num">140 s</td><td>Both ARRIVED, mug reached</td></tr>
+      <tr><td class="num">Oct 31</td><td>Blue ball → mug</td><td class="num">179 s</td><td>Both ARRIVED</td></tr>
+      <tr><td class="num">Oct 31</td><td>Bottle → cat</td><td class="num">171 s</td><td>Both ARRIVED</td></tr>
+      <tr><td class="num">Oct 31</td><td>Blue ball → bottle</td><td class="num">163 s</td><td>Both ARRIVED</td></tr>
+      <tr><td class="num">Nov 1</td><td>Blue ball → bottle (the run in the video)</td><td class="num">157 s</td><td>Both ARRIVED</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted" style="margin-top:8px">The log holds 14 chained attempts, and 6 ended with both targets ARRIVED while the code was changing underneath them. Of the last 7, 5 finished both targets. These are test runs in one room, not a controlled reliability trial.</p>
+
+  <h2>Language: parser vs Llama</h2>
+  <p>The same 18 commands went through each engine, with no motors involved. A case passes only if the moves come out in exactly the expected order, with nothing added.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Engine</th><th>Where</th><th>Passed</th><th>Model time</th></tr></thead>
+    <tbody>
+      <tr><td>Fixed-phrase parser</td><td>any machine</td><td class="num">18/18</td><td>none</td></tr>
+      <tr><td>Llama 3.1 8B, raw mode</td><td>desktop</td><td class="num">17/18</td><td class="num">1.67 s median</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted" style="margin-top:8px">The list was written with the parser's phrases known, so its score is flattering. Stop words skip the model, so Llama saw 15 commands and got 14 right. Its miss: "do not turn left" came back as back up, then turn right. <a href="https://github.com/Beluggin/multimodal-teleoperation/tree/main/eval">How to read and reproduce this</a>.</p>
+
+  <h2>Known limits</h2>
+  <ul>
+    <li>Motion is open loop. Short spins undershoot, and timing drifts with battery charge.</li>
+    <li>Arrival is judged from the image, and some paths can report ARRIVED too early.</li>
+    <li>With two cats in the room, it hunts whichever one it sees first.</li>
+    <li>The arm is manual only.</li>
+  </ul>
+</main>
+</body>
+</html>
