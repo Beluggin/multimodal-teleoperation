@@ -25,7 +25,7 @@ How to read these:
 - **Stop isn't scored for the model.** Raw mode catches stop words before the model runs, so Llama saw 15 of the 18 commands.
 - **The Pi's 18/18 is flattering too.** Four test commands ("go forward", "turn left then go forward", "don't go forward", "what is your name") also appear word for word as examples in the system prompt, and it's one pass at temperature 0 on a short list. It shows the prompt works, not that the Pi model is reliable.
 - **A bigger model did worse.** On the desktop, Llama 3.1 8B answered "do not turn left" with back up, then turn right. A negated command made it move, which is why the main path doesn't leave language to a model.
-- **Raw mode costs time.** The Pi's 3.86 s median is slower than the old ~2.1 s because of the longer prompt and JSON reply. A chain of three moves took 9.12 s, and the first call after a cold load took 42.55 s.
+- **Raw mode costs time.** The Pi's 3.86 s median is slower than the old ~2.1 s, probably because of the longer prompt and JSON reply, but that was not tested separately. A chain of three moves took 9.12 s, and the first call after a cold load took 42.55 s.
 - **The older baseline is a different test.** The 11/18 and ~2.1 s in the [build notes](../docs/MITT_BUILD_NOTES.md) are Llama 3.2 3B on the Pi against an earlier command list, which isn't in this repo. Don't compare those scores with these.
 
 ## Missions on the tank
