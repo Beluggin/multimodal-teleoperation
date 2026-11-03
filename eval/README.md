@@ -53,6 +53,23 @@ The fine-tune also passed the 18 commands above on both machines (4.19 s median 
 - **The phone page is behind.** The Pi's copy of the parser hasn't been updated yet, so the phone page can still start a mission from the old wording.
 - **The main drive path still uses the parser.** The fine-tune beat it on this list but has only run in raw mode, not in missions.
 
+## Fine-tuned Muse Glimmer 30B on the same lists
+
+The same training data and LoRA settings, on [Muse Glimmer 30B](https://huggingface.co/Beluggin/Muse-Glimmer-30B-MITT-Tank), on an A100 80 GB rented from Modal. **It has never run on the tank**, because it's far too big for the Pi. The tank keeps the Llama tune.
+
+| Engine | 50 new commands | 18 original commands | Invalid replies | Moved when it shouldn't | Median model time, 50 / 18 |
+|---|---|---|---|---|---|
+| Fine-tuned, short prompt | 50/50 | 18/18 | 0 | 0 | 1.50 s / 1.60 s |
+| Stock Muse Glimmer 30B, full prompt | 31/50 | 13/18 | 0 | 0 | 0.44 s / 0.43 s |
+
+- **Stock's score probably undersells it.** The test starts the reply at the answer channel, skipping Muse Glimmer's reasoning step. Stock replied "no moves" to 19 of the 28 moving commands on the new list. Stock with reasoning on wasn't tested, so this gap measures this setup, not what Muse Glimmer can do.
+- **It isn't comparable to the Llama tune's 49/50.** That ran through Ollama on a Pi with JSON output on. This ran through `transformers` at full precision with no JSON constraint, and one point on this list is noise anyway.
+- **It may have memorized its data.** Training loss reached about zero. The caveats above about how unseen this list is apply here too.
+- **A rejected reply passes a no-motion command.** Random weights scored 22/50 in a dry run that way, so these results also count invalid replies. There were none.
+- **The result files say "Llama chose no motion"** for an empty reply. That's a label from the shared reply check. These replies came from Muse Glimmer.
+
+Full replies are in `results/glimmer_*.json`.
+
 ## Fine-tuned Llama on the tank
 
 Eight steps on the floor, using the fine-tune on the Pi at 30% power on Nov 3. The moves are from the driver's log, and "On the floor" is what a person watching saw, by eye. It's one pass, not a reliability trial.

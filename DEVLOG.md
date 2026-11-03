@@ -2,6 +2,19 @@
 
 Newest first. Record verified results separately from proposals and live tests.
 
+## 2026-11-03 — Fine-tuned Muse Glimmer 30B on Modal
+
+The hackathon board gave no tuning points for the Llama LoRA, so the same data and
+settings went through Muse Glimmer 30B on a rented A100 80 GB. Dry-ran the code on a
+tiny random model first. That showed random weights score 22/50, because rejected
+replies pass no-motion commands, so the results now count invalid replies. Modal
+refused the GPU until the account had a payment method, and interrupted the download
+once. Training took 19 minutes, with no interruption. About $1.50 by my math.
+
+Verified: tuned 50/50 and 18/18, stock 31/50 and 13/18, 0 invalid replies, 0 wrong
+moves for either. Stock's score is measured with its reasoning step skipped, and with
+reasoning on wasn't tested. Never run on the tank, which keeps the Llama tune.
+
 ## 2026-11-03 — Parser: a command has to be the whole sentence
 
 The new test list showed the parser acted on known phrases anywhere in a
