@@ -13,7 +13,7 @@ import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src", "tank_phone"))
 import server as srv  # noqa: E402
 
 _OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -225,8 +225,7 @@ class LaunchApi(unittest.TestCase):
 class StreamApi(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        sys.path.insert(0, os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))))
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src"))
         cls.httpd = ThreadingHTTPServer(("127.0.0.1", 0), srv.Handler)
         cls.httpd.servo_enabled = False
         cls.httpd.speech_session = None

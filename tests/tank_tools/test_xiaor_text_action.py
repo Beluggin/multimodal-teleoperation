@@ -3,14 +3,16 @@
 test_xiaor_text_action.py — committed tests for the fixed-phrase text→action
 classifier. Stdlib unittest, no network, no waiting (fake sender + fake sleep).
 
-Run from tank_tools/:
-    python3 test_xiaor_text_action.py
+Run from the repo root:
+    python3 tests/tank_tools/test_xiaor_text_action.py
 """
 
 import os
+import sys
 import unittest
 
-import xiaor_text_action as x
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src", "tank_tools"))
+import xiaor_text_action as x  # noqa: E402
 
 
 def classify(text):

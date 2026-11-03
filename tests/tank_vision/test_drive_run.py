@@ -8,7 +8,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src"))
 from tank_vision.drive_run import (  # noqa: E402
     chassis_scan, resolve_prompt, spin_secs_for_dx, step_secs_for_area,
 )

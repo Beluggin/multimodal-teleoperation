@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src", "tank_phone"))
 import servo_ctl  # noqa: E402
 import server as srv  # noqa: E402
 

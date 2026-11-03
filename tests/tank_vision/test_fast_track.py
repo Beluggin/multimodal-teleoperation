@@ -7,7 +7,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src"))
 from PIL import Image, ImageDraw  # noqa: E402
 
 from tank_vision.fast_track import (  # noqa: E402

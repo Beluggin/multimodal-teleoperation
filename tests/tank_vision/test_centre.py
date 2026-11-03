@@ -4,7 +4,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src"))
 from tank_vision.centre import (  # noqa: E402
     camera_recenter_angles, centred, plan_step, run_chassis_scan,
     run_scan, scan_pan_positions, scan_tilts, sign_after_trial,
