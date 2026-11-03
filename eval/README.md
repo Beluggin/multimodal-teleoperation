@@ -28,6 +28,19 @@ How to read these:
 - **Raw mode costs time.** The Pi's 3.86 s median is slower than the old ~2.1 s, probably because of the longer prompt and JSON reply, but that was not tested separately. A chain of three moves took 9.12 s, and the first call after a cold load took 42.55 s.
 - **The older baseline is a different test.** The 11/18 and ~2.1 s in the [build notes](../docs/MITT_BUILD_NOTES.md) are Llama 3.2 3B on the Pi against an earlier command list, which isn't in this repo. Don't compare those scores with these.
 
+## Raw mode on the tank
+
+Six steps on the floor, using Llama 3.2 3B on the Pi at 30% power on Nov 2. The moves are from the driver's log, and "On the floor" is what a person watching saw, by eye. It's one pass, not a reliability trial.
+
+| Command | Llama's answer | Model time | On the floor |
+|---|---|---|---|
+| `go forward` | `go` 1 s | 3.9 s | Stayed square for 15 cm, then drifted right; ended about 1 cm off the seam |
+| `turn left` | `spinl` 0.65 s | 4.2 s | About 80° |
+| `do not turn left` | no motion | not logged | Didn't move |
+| `turn left then go forward` | `spinl` 0.65 s, `go` 1 s | 6.7 s | Turned, then drove, about as far as the single moves |
+| `go forward`, then `stop` 1 s later | answer thrown away | n/a | Didn't move; only the stop was sent |
+| `scoot ahead a little bit` | `go` 0.5 s | 4.0 s | About 15 cm |
+
 ## Missions on the tank
 
 Launch to the final stop the motors acknowledged. ARRIVED is what the software reported. Source: the timestamped launcher log.
