@@ -31,7 +31,7 @@ With a XiaoR tank, run these only with someone watching it:
 1. `cp .env.example .env` and fill it in. `MODEL_API_KEY` is your Meta Model API key.
 2. Add a `tank-lan` host to `~/.ssh/config` pointing at your Pi.
 3. Pick a token and save it to `/tmp/mitt/bench_token`, on the Pi and on the desktop.
-4. Copy `src/tank_bench/motor_listen.py` to the Pi and start it: `BENCH_TOKEN=<token> python3 -u motor_listen.py`
+4. Copy `src/tank_bench/motor_listen.py` to the Pi and start it: `BENCH_TOKEN=<token> python3 -u motor_listen.py`. It shuts itself off after an hour, so restart it for each session.
 5. Deploy the phone server. The commands are at the top of `src/tank_phone/server.py`.
 6. Run a mission from the desktop:
 
@@ -56,6 +56,7 @@ Raw mode needs [Ollama](https://ollama.com) and `ollama pull llama3.2:3b`. Then 
 ## Meta in the stack
 
 - **SAM 3.1 via the Meta Model API** is the vision. Every look in the drive loop is a SAM call (`src/tank_vision/meta_sam.py`, using Meta's official parser).
+- **Muse Wonder** was the main builder from day 2 until Friday night, when the hackathon credits ran low. It ran the servo calibration and made the phone GUI.
 - **Muse, Meta's coding agent**, built much of the stack, including recovering the XiaoR servo protocol at I2C `0x17` (`FF ch angle FF`) from the vendor's compiled module. See [`src/tank_tools/servo_0x17_protocol.md`](src/tank_tools/servo_0x17_protocol.md). `src/tank_phone/servo_ctl.py` drives the servos directly, with no vendor code.
 - **Muse Spark Open** (`muse-spark-open-1026`), served through Baseten, is wired in as the fallback when the parser doesn't know a phrase. It can only propose a sentence, and that sentence must still pass the parser (`src/tank_speech/`).
 - **Llama 3.2** on the Pi was the starting point. It is not in the main drive path, and the build notes explain why. It's still runnable as an optional raw mode, words to moves with no parser, so the baseline can be compared with the full pipeline (`src/tank_tools/llama_raw.py`, [results](eval/README.md)).

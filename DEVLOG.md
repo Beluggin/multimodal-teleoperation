@@ -15,7 +15,9 @@ Verified: unit tests; the real driver in a pty against a fake listener and a
 fake slow model (a stop or manual key while it was thinking dropped the
 answer); `eval/language_eval.py` against a real Llama 3.1 8B on the desktop,
 17/18, where "do not turn left" came back as back up, turn right.
-Not yet verified at this entry: raw mode on the Pi or on the motors.
+Also on the Pi with Llama 3.2 3B, no motors: 18/18, 3.86 s median, 42.55 s cold first
+call. Four of the commands also appear as prompt examples, so that score is flattering.
+Not yet verified at this entry: raw mode on the motors.
 
 Also fixed: bench tools and the driver read a path specific to one dev session,
 and Pillow was an undeclared dependency.

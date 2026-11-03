@@ -81,10 +81,11 @@
     <thead><tr><th>Engine</th><th>Where</th><th>Passed</th><th>Model time</th></tr></thead>
     <tbody>
       <tr><td>Fixed-phrase parser</td><td>any machine</td><td class="num">18/18</td><td>none</td></tr>
+      <tr><td>Llama 3.2 3B, raw mode</td><td>Raspberry Pi 5, 4 GB</td><td class="num">18/18</td><td class="num">3.86 s median</td></tr>
       <tr><td>Llama 3.1 8B, raw mode</td><td>desktop</td><td class="num">17/18</td><td class="num">1.67 s median</td></tr>
     </tbody>
   </table></div>
-  <p class="muted" style="margin-top:8px">The list was written with the parser's phrases known, so its score is flattering. Stop words skip the model, so Llama saw 15 commands and got 14 right. Its miss: "do not turn left" came back as back up, then turn right. <a href="https://github.com/Beluggin/multimodal-teleoperation/tree/main/eval">How to read and reproduce this</a>.</p>
+  <p class="muted" style="margin-top:8px">This is a short list and both perfect scores are flattering: it was written with the parser's phrases known, and four commands also appear as examples in Llama's prompt. Stop words skip the model, so Llama saw 15 commands. The desktop model's miss: "do not turn left" came back as back up, then turn right. <a href="https://github.com/Beluggin/multimodal-teleoperation/tree/main/eval">How to read and reproduce this</a>.</p>
 
   <h2>Known limits</h2>
   <ul>

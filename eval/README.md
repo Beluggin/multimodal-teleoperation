@@ -9,6 +9,7 @@ The same 18 commands (`commands.json`) go through each engine. A case passes onl
 | Engine | Where | Passed | Model time |
 |---|---|---|---|
 | Fixed-phrase parser | any machine | 18/18 | none |
+| Llama 3.2 3B, raw mode | Raspberry Pi 5, 4 GB, CPU | 18/18 | 3.86 s median, 42.55 s cold first call |
 | Llama 3.1 8B, raw mode | desktop | 17/18 | 1.67 s median, 8.90 s first call |
 
 Full results are in `results/`. To reproduce:
@@ -21,10 +22,11 @@ python3 eval/language_eval.py llama --model llama3.2:3b --note "where it ran" --
 How to read these:
 
 - **The parser's score is flattering.** This list was written with the parser's phrases known, and any phrase it doesn't know moves nothing, so it fails safe but misses a lot of natural speech. This shows it handles the listed commands. It doesn't show it understands English better than Llama.
-- **Stop isn't scored for the model.** Raw mode catches stop words before the model runs, so Llama saw 15 of the 18 commands and got 14 right.
-- **The miss matters.** "do not turn left" came back as back up, then turn right. A negated command made it move, which is why the main path doesn't leave language to a model.
+- **Stop isn't scored for the model.** Raw mode catches stop words before the model runs, so Llama saw 15 of the 18 commands.
+- **The Pi's 18/18 is flattering too.** Four test commands ("go forward", "turn left then go forward", "don't go forward", "what is your name") also appear word for word as examples in the system prompt, and it's one pass at temperature 0 on a short list. It shows the prompt works, not that the Pi model is reliable.
+- **A bigger model did worse.** On the desktop, Llama 3.1 8B answered "do not turn left" with back up, then turn right. A negated command made it move, which is why the main path doesn't leave language to a model.
+- **Raw mode costs time.** The Pi's 3.86 s median is slower than the old ~2.1 s because of the longer prompt and JSON reply. A chain of three moves took 9.12 s, and the first call after a cold load took 42.55 s.
 - **The older baseline is a different test.** The 11/18 and ~2.1 s in the [build notes](../docs/MITT_BUILD_NOTES.md) are Llama 3.2 3B on the Pi against an earlier command list, which isn't in this repo. Don't compare those scores with these.
-- **Desktop timing says nothing about the Pi.** The desktop model is also larger than the one the Pi runs.
 
 ## Missions on the tank
 
