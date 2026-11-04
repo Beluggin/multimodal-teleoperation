@@ -3,7 +3,7 @@
 **Multimodal Interface for Teleoperation and Tracking**
 Meta AI Developer Hackathon, indie track. Built Oct 26 – Nov 4, 2026, by Adam.
 
-**Watch the video first:** https://youtu.be/jEXv6ofJLUQ
+**Watch the video first:** https://youtu.be/6lg8anOFa3c
 
 MITT is a XiaoR Geek tracked robot with a camera and an arm. You tell it what you want, by voice or by typing, something like "go to the blue ball then go to the bottle." It finds each target with Meta's SAM 3.1, turns, drives over, checks that it got there, and moves on to the next one. You can also take over and drive it by hand from your phone.
 

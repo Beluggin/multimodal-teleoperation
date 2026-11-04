@@ -4,7 +4,7 @@
 
 **Push the Frontier:** Meta's models get a real robot out of the simulator, turning a spoken sentence into a physical search, drive and arrival check.
 
-**Watch the demo:** https://youtu.be/jEXv6ofJLUQ
+**Watch the demo:** https://youtu.be/6lg8anOFa3c
 
 **Read the story:** [Build notes](docs/MITT_BUILD_NOTES.md), including what broke and what's next.
 
@@ -48,7 +48,7 @@ docker run --rm -p 127.0.0.1:8123:8123 mitt    # the phone page at localhost:812
 
 The container can't reach a robot, so it's for trying the software. Motors, servos and the camera need the Pi, using the steps below.
 
-With `--demo`, which the container uses by default, the language parser is real. The sticks and Launch drive only show "Simulated, hardware not available". There's no fake mission, camera or SAM call, so to see those working, watch [the demo](https://youtu.be/jEXv6ofJLUQ).
+With `--demo`, which the container uses by default, the language parser is real. The sticks and Launch drive only show "Simulated, hardware not available". There's no fake mission, camera or SAM call, so to see those working, watch [the demo](https://youtu.be/6lg8anOFa3c).
 
 With a XiaoR tank, run these only with someone watching it:
 
