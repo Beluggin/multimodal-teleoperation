@@ -10,6 +10,15 @@
 
 **See the numbers:** [Run report](https://beluggin.github.io/multimodal-teleoperation/) (recorded runs, not a live tank) and [evaluation](eval/README.md).
 
+## Prior work
+
+These came from before the hackathon's Oct 26 kickoff. Everything else in this repo was built during the event.
+
+- **Motor driver, bench tools and measured motor map** (`src/tank_bench/`, except `drive_step.py`). The motor listener wasn't changed during the hackathon.
+- **Base text-command parser and its tests** (`src/tank_tools/xiaor_text_action.py`). Go-to phrases, chaining and the stricter whole-sentence rule were added during the event.
+- **Keyboard driver** (`src/tank_tools/tank_control.py`).
+- **Llama 3.2 on the Pi.** It was installed and tried before kickoff. The raw-mode code, test lists and both fine-tunes in this repo came during the event.
+
 MITT is a XiaoR Geek tracked robot (Raspberry Pi 5, pan/tilt camera, arm) that takes a spoken or typed instruction such as *"go to the blue ball then go to the bottle"*, finds each target with **Meta SAM 3.1**, turns and drives to it, checks that it has arrived, and moves on to the next one. It runs on physical hardware, not in a simulator.
 
 Built for the Meta AI Developer Hackathon (indie track), Oct 26 – Nov 4 2026. Every step, including the failures, is logged in [DEVLOG.md](DEVLOG.md). Old entries are kept as written, apart from redacted personal details, so they can contradict later ones.
