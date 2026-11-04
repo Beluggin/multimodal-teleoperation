@@ -8,6 +8,8 @@
 
 **Read the story:** [Build notes](docs/MITT_BUILD_NOTES.md), including what broke and what's next.
 
+**Published models:** [Muse-Glimmer-30B-MITT-Tank](https://huggingface.co/Beluggin/Muse-Glimmer-30B-MITT-Tank) and [Llama-3.2-3B-MITT-Tank](https://huggingface.co/Beluggin/Llama-3.2-3B-MITT-Tank), on Hugging Face.
+
 **See the numbers:** [Run report](https://beluggin.github.io/multimodal-teleoperation/) (recorded runs, not a live tank) and [evaluation](eval/README.md).
 
 ## Prior work
