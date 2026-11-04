@@ -4,11 +4,20 @@
 
 **Push the Frontier:** Meta's models get a real robot out of the simulator, turning a spoken sentence into a physical search, drive and arrival check.
 
-**Watch the demo:** https://youtu.be/jEXv6ofJLUQ
+**Watch the demo:** https://youtu.be/6lg8anOFa3c
 
 **Read the story:** [Build notes](docs/MITT_BUILD_NOTES.md), including what broke and what's next.
 
 **See the numbers:** [Run report](https://beluggin.github.io/multimodal-teleoperation/) (recorded runs, not a live tank) and [evaluation](eval/README.md).
+
+## Prior work
+
+These came from before the hackathon's Oct 26 kickoff. Everything else in this repo was built during the event.
+
+- **Motor driver, bench tools and measured motor map** (`src/tank_bench/`, except `drive_step.py`). The motor listener wasn't changed during the hackathon.
+- **Base text-command parser and its tests** (`src/tank_tools/xiaor_text_action.py`). Go-to phrases, chaining and the stricter whole-sentence rule were added during the event.
+- **Keyboard driver** (`src/tank_tools/tank_control.py`).
+- **Llama 3.2 on the Pi.** It was installed and tried before kickoff. The raw-mode code, test lists and both fine-tunes in this repo came during the event.
 
 MITT is a XiaoR Geek tracked robot (Raspberry Pi 5, pan/tilt camera, arm) that takes a spoken or typed instruction such as *"go to the blue ball then go to the bottle"*, finds each target with **Meta SAM 3.1**, turns and drives to it, checks that it has arrived, and moves on to the next one. It runs on physical hardware, not in a simulator.
 
@@ -39,7 +48,7 @@ docker run --rm -p 127.0.0.1:8123:8123 mitt    # the phone page at localhost:812
 
 The container can't reach a robot, so it's for trying the software. Motors, servos and the camera need the Pi, using the steps below.
 
-With `--demo`, which the container uses by default, the language parser is real. The sticks and Launch drive only show "Simulated, hardware not available". There's no fake mission, camera or SAM call, so to see those working, watch [the demo](https://youtu.be/jEXv6ofJLUQ).
+With `--demo`, which the container uses by default, the language parser is real. The sticks and Launch drive only show "Simulated, hardware not available". There's no fake mission, camera or SAM call, so to see those working, watch [the demo](https://youtu.be/6lg8anOFa3c).
 
 With a XiaoR tank, run these only with someone watching it:
 
