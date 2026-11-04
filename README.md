@@ -2,6 +2,8 @@
 
 **Multimodal Interface for Teleoperation and Tracking.** Say what you want, and a real tank goes and gets it.
 
+**Push the Frontier:** Meta's models get a real robot out of the simulator, turning a spoken sentence into a physical search, drive and arrival check.
+
 **Watch the demo:** https://youtu.be/jEXv6ofJLUQ
 
 **Read the story:** [Build notes](docs/MITT_BUILD_NOTES.md), including what broke and what's next.
@@ -82,7 +84,7 @@ The stock XiaoR stack is fully replaced: the repo's own motor listener and bench
 
 ## Live results
 
-From the timestamped launcher log: launch to the final stop the motors acknowledged. ARRIVED is what the software reported.
+From the timestamped launcher log, except Nov 3, which is from the run's output: launch to the final stop the motors acknowledged. ARRIVED is what the software reported.
 
 | Date | Run | Time | Result |
 |---|---|---|---|
@@ -95,6 +97,7 @@ From the timestamped launcher log: launch to the final stop the motors acknowled
 | Oct 31 | Bottle → cat | 171 s | Both ARRIVED |
 | Oct 31 | Blue ball → bottle | 163 s | Both ARRIVED |
 | Nov 1 | Blue ball → bottle (the run in the video) | 157 s | Both ARRIVED |
+| Nov 3 | Blue ball, after the parser fix | 209 s | Drove to the ball, then lost it and stopped itself. No ARRIVED. Cause not found yet |
 
 More measurements are in [eval/README.md](eval/README.md). The log holds 14 chained attempts, and 6 ended with both targets ARRIVED while the code was changing underneath them. Of the last 7, 5 finished both targets. These are test runs in one room, not a controlled reliability trial.
 
