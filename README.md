@@ -1,8 +1,10 @@
 # MITT
 
-**Multimodal Interface for Teleoperation and Tracking.** Say what you want, and a real tank goes and gets it.
+**Multimodal Interface for Teleoperation and Tracking.** Say what you want, and a small hobby tank robot goes and gets it.
 
 **Push the Frontier:** Meta's models get a real robot out of the simulator, turning a spoken sentence into a physical search, drive and arrival check.
+
+**Bonus categories targeted:** Best Agentic Use-Case, Best Creative Build.
 
 **Watch the demo:** https://youtu.be/6lg8anOFa3c
 
@@ -151,3 +153,7 @@ The robot is a **XiaoR Geek** tank kit (Raspberry Pi 5 "V2" control board). Xiao
 ## Built with
 
 **Built with Llama.** Built by Adam with AI coding agents: Meta's Muse, Anthropic's Claude and OpenAI's Codex. The hardware tests were run in person on a living-room floor.
+
+## License
+
+The code in this repo is [MIT](LICENSE). The fine-tunes on Hugging Face keep their base models' licenses (see [`train/NOTICE`](train/NOTICE)).
